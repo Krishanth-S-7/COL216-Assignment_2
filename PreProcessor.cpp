@@ -30,9 +30,12 @@ int main(int argc, char* argv[]) {
         if (comment_pos != string::npos) {
             line = line.substr(0, comment_pos);
         }
-        if (line.find_first_not_of(" \t\r\n") == string::npos) {
-            continue; 
+        size_t first = line.find_first_not_of(" \t\r\n");
+        if (first == string::npos) {
+            continue;
         }
+        size_t last = line.find_last_not_of(" \t\r\n");
+        line = line.substr(first, (last - first + 1));
         if (line[0]=='.'){
             size_t colon_pos = line.find(':');
             if (colon_pos != string::npos) {
