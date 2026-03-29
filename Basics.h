@@ -38,6 +38,8 @@ struct ROBEntry {
 };
 
 struct RSEntry {
+    bool valid;
+    
     // value, tag, ready ... for both operands
     // other fields as required
 };
