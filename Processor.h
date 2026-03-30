@@ -165,7 +165,9 @@ public:
 
     void broadcastOnCDB() {};
 
-    void stageFetch() {};
+    void stageFetch() {
+
+    };
 
     void stageDecode() {};
 

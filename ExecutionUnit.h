@@ -29,6 +29,7 @@ public:
         this -> name = name;
         this -> latency = latency;
         this -> rs_size = rs_size;
+        // reservation_station.resize(rs_size);
     }
     void capture(int tag, int val) {};
     void executeCycle() {};
