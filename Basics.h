@@ -35,11 +35,20 @@ struct ProcessorConfig {
 struct ROBEntry {
     // valid bit, ready bit, architectural register ID
     // other fields as required
+    bool valid;
+    bool ready;
+    int destReg;
+    int value;
 };
 
 struct RSEntry {
     bool valid;
-    
+    int value1;
+    int value2;
+    int tag1;
+    int tag2;
+    bool ready1;
+    bool ready2;
     // value, tag, ready ... for both operands
     // other fields as required
 };

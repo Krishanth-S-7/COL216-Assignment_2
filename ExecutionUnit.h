@@ -31,6 +31,6 @@ public:
         this -> rs_size = rs_size;
         // reservation_station.resize(rs_size);
     }
-    void capture(int tag, int val) {};
-    void executeCycle() {};
+    void capture(int tag, int val);
+    void executeCycle();
 };

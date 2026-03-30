@@ -161,19 +161,17 @@ public:
 
     }
 
-    void flush() {};
+    void flush();
 
-    void broadcastOnCDB() {};
+    void broadcastOnCDB();
 
-    void stageFetch() {
+    void stageFetch();
 
-    };
+    void stageDecode();
 
-    void stageDecode() {};
+    void stageExecuteAndBroadcast();
 
-    void stageExecuteAndBroadcast() {};
-
-    void stageCommit() {};
+    void stageCommit();
 
     bool step() {
         clock_cycle++;
