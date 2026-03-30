@@ -8,16 +8,42 @@ void ExecutionUnit::capture(int tag, int val) {
 }
 
 void ExecutionUnit::executeCycle() {
-    ReservationStationEntry* inst = nullptr;
+    if (pipeline.empty()) {
+        pushIntoPipeline();
+        if (!pipeline.empty() && pipeline.front()->current_latency == latency) {
+            runInst(pipeline[0]);
+            removeEntry();
+            pipeline.pop_back();
+        }
+        return;
+    }
+    for (RSEntry* entry : pipeline) entry->current_latency++;
+    if (pipeline[0]->current_latency == latency) {
+        runInst(pipeline[0]);
+        removeEntry();
+        pipeline.erase(pipeline.begin());
+    }
+    pushIntoPipeline();
+}
+
+void ExecutionUnit::pushIntoPipeline() {
     for (int i = 0; i < reservation_station.size(); i++) {
         if (reservation_station[i].Vj && reservation_station[i].Vk) {
-            inst = &reservation_station[i];
-            break;
+            reservation_station[i].current_latency++;
+            pipeline.push_back(&reservation_station[i]);
+            return;
         }
     }
-    if (!inst) return;
-    inst->working = true;
-    int result;
+}
+
+void ExecutionUnit::removeEntry() {
+    if (pipeline.empty()) return;
+    int ind = 0;
+    while (&reservation_station[ind] != pipeline[0]) ind++;
+    reservation_station.erase(reservation_station.begin()+ind);
+}
+
+void ExecutionUnit::runInst(RSEntry* inst) {
     if (name == UnitType::ADDER) {
         adder(inst);
     } else if (name == UnitType::BRANCH) {
@@ -33,7 +59,7 @@ void ExecutionUnit::executeCycle() {
     }
 }
 
-void adder(ReservationStationEntry* inst) {
+void adder(RSEntry* inst) {
     if (inst->op == OpCode::ADD) {
 
     } else if (inst->op == OpCode::ADDI) {
@@ -47,13 +73,13 @@ void adder(ReservationStationEntry* inst) {
     }
  }
 
-void multiplier(ReservationStationEntry* inst) {
+void multiplier(RSEntry* inst) {
     if (inst->op == OpCode::MUL) {
 
     }
 }
 
-void divider(ReservationStationEntry* inst) {
+void divider(RSEntry* inst) {
     if (inst->op == OpCode::DIV) {
 
     } else if (inst->op == OpCode::REM) {
@@ -61,7 +87,7 @@ void divider(ReservationStationEntry* inst) {
     }
 }
 
-void logic(ReservationStationEntry* inst) {
+void logic(RSEntry* inst) {
     if (inst->op == OpCode::AND) {
 
     } else if (inst->op == OpCode::ANDI) {
@@ -77,7 +103,7 @@ void logic(ReservationStationEntry* inst) {
     }
 }
 
-void branch(ReservationStationEntry* inst) {
+void branch(RSEntry* inst) {
     if (inst->op == OpCode::BEQ) {
 
     } else if (inst->op == OpCode::BNE) {
@@ -89,7 +115,7 @@ void branch(ReservationStationEntry* inst) {
     }
 }
 
-void loadstore(ReservationStationEntry* inst) {
+void loadstore(RSEntry* inst) {
     if (inst->op == OpCode::LW) {
 
     } else if (inst->op == OpCode::SW) {

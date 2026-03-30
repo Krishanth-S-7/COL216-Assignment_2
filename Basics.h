@@ -51,7 +51,8 @@ struct RSEntry {
     int Valuek = 0;
     int dest = -1;
     int current_latency = 0;
-
+    bool Vj = false;
+    bool Vk = false;
     // value, tag, ready ... for both operands
     // other fields as required
 };
