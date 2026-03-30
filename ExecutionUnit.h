@@ -4,24 +4,12 @@
 #include <string>
 #include "Basics.h"
 
-struct ReservationStationEntry {
-    bool working = false;
-    OpCode op;
-    int Vj;
-    int Vk;
-    int Tagj;
-    int Tagk;
-    int Valuej;
-    int Valuek;
-    int dest;
-    int current_latency;
-};
 class ExecutionUnit {
 public:
     // per-unit reservation station
     UnitType name;
     int latency;
-    std::vector<ReservationStationEntry> reservation_station;
+    std::vector<RSEntry> reservation_station;
     bool has_result = false; // result flag
     bool has_exception = false; // exception flag
     int rs_size;
@@ -29,7 +17,13 @@ public:
         this -> name = name;
         this -> latency = latency;
         this -> rs_size = rs_size;
-        // reservation_station.resize(rs_size);
+        reservation_station.resize(rs_size);
+    }
+    bool isfull() {
+        for (auto& entry : reservation_station) {
+            if (!entry.valid) return false;
+        }
+        return true;
     }
     void capture(int tag, int val) {};
     void executeCycle() {};

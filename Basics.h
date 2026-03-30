@@ -5,12 +5,12 @@ enum class OpCode { ADD, SUB, ADDI, MUL, DIV, REM, LW, SW, BEQ, BNE, BLT, BLE, J
 enum class UnitType { ADDER, MULTIPLIER, DIVIDER, LOADSTORE, BRANCH, LOGIC };
 
 struct Instruction {
-    OpCode op;
-    int dest;
-    int src1;
-    int src2;
-    int imm;
-    int pc;
+    OpCode op;       
+    int dest = -1;
+    int src1 = -1;
+    int src2 = -1;
+    int imm = 0;
+    int pc = -1;
 };
 
 struct ProcessorConfig {
@@ -39,7 +39,14 @@ struct ROBEntry {
 
 struct RSEntry {
     bool valid;
-    
+    bool working = false;
+    OpCode op;
+    int Tagj = -1;
+    int Tagk = -1;
+    int Valuej = 0;
+    int Valuek = 0;
+    int dest = -1;
+    int current_latency = 0;
     // value, tag, ready ... for both operands
     // other fields as required
 };

@@ -96,6 +96,8 @@ public:
     // pipeline registers
 
     std::vector<Instruction> inst_memory;
+    Instruction fetch_reg;
+    Instruction decode_reg;
 
     // architectural state (do not change)
     std::vector<int> ARF; // regFile
@@ -166,10 +168,19 @@ public:
     void broadcastOnCDB() {};
 
     void stageFetch() {
-
+        if (pc < inst_memory.size()) {
+            decode_reg = fetch_reg;
+            fetch_reg = inst_memory[pc];
+            pc = bp.predict(pc, fetch_reg.imm, fetch_reg.op);
+        }
     };
 
-    void stageDecode() {};
+    void stageDecode() {
+        if(decode_reg.pc == -1) return;
+        if (decode_reg.op == OpCode::ADD || decode_reg.op == OpCode::SUB || decode_reg.op == OpCode::ADDI) {
+            
+        }
+    };
 
     void stageExecuteAndBroadcast() {};
 

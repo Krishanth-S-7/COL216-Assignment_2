@@ -9,16 +9,23 @@ public:
     int correct_predictions = 0;
     int counter = 0;
     int predict(int current_pc, int imm, OpCode op) {
+    if(op == OpCode::BEQ || op == OpCode::BNE || op == OpCode::BLT || op == OpCode::BLE) {
         if(counter >= 2) {
-            return current_pc + imm; 
+            return imm; 
         }
         else {
             return current_pc + 1;
         }
-        // return current_pc + imm; 
+        }
+    else if(op == OpCode::J) {
+        return imm;
     }
+    else {
+        return current_pc + 1;
+    }
+}
 
-    void update(int pc, int actual_target, bool taken, bool was_correct) {
+void update(int pc, int actual_target, bool taken, bool was_correct) {
         total_branches++;
         if (was_correct) {
             correct_predictions++;
