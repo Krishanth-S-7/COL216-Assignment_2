@@ -25,6 +25,6 @@ public:
         }
         return true;
     }
-    void capture(int tag, int val) {};
-    void executeCycle() {};
+    void capture(int tag, int val);
+    void executeCycle();
 };

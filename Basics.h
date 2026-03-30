@@ -35,6 +35,10 @@ struct ProcessorConfig {
 struct ROBEntry {
     // valid bit, ready bit, architectural register ID
     // other fields as required
+    bool valid;
+    bool ready;
+    int destReg;
+    int value;
 };
 
 struct RSEntry {
@@ -47,6 +51,7 @@ struct RSEntry {
     int Valuek = 0;
     int dest = -1;
     int current_latency = 0;
+
     // value, tag, ready ... for both operands
     // other fields as required
 };

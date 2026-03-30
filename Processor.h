@@ -163,9 +163,9 @@ public:
 
     }
 
-    void flush() {};
+    void flush();
 
-    void broadcastOnCDB() {};
+    void broadcastOnCDB();
 
     void stageFetch() {
         if (pc < inst_memory.size()) {
@@ -182,9 +182,9 @@ public:
         }
     };
 
-    void stageExecuteAndBroadcast() {};
+    void stageExecuteAndBroadcast();
 
-    void stageCommit() {};
+    void stageCommit();
 
     bool step() {
         clock_cycle++;
