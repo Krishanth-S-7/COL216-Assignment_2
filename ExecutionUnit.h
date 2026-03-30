@@ -30,6 +30,6 @@ public:
         this -> latency = latency;
         this -> rs_size = rs_size;
     }
-    void capture(int tag, int val) {};
-    void executeCycle() {};
+    void capture(int tag, int val);
+    void executeCycle();
 };
