@@ -379,6 +379,45 @@ public:
             ROB[rob_tail].ready = false;
             ROB[rob_tail].destReg = fetch_reg.dest;
             ROB[rob_tail].value = -1;
+            RSEntry entry;
+            entry.valid = true;
+            entry.op = fetch_reg.op;
+            if(RAT[fetch_reg.src1] != -1) {
+                int rob_idx = RAT[fetch_reg.src1];
+                if (ROB[rob_idx].ready) {
+                    entry.Valuej = ROB[rob_idx].value;
+                    entry.Vj = true;
+                } else {
+                    entry.Tagj = rob_idx;
+                    entry.Vj = false;
+                }
+            } else {
+                entry.Valuej = ARF[fetch_reg.src1];
+                entry.Vj = true;
+            }
+            if(fetch_reg.op == OpCode::ANDI || fetch_reg.op == OpCode::ORI || fetch_reg.op == OpCode::XORI){
+                entry.Valuek = fetch_reg.imm;
+                entry.Vk = true;
+            }else {
+            if(RAT[fetch_reg.src2] != -1) {
+                int rob_idx = RAT[fetch_reg.src2];
+                if (ROB[rob_idx].ready) {
+                    entry.Valuek = ROB[rob_idx].value;
+                    entry.Vk = true;
+                } else {
+                    entry.Tagk = rob_idx;
+                    entry.Vk = false;
+                }
+            } else {
+                entry.Valuek = ARF[fetch_reg.src2];
+                entry.Vk = true;
+            }
+        }
+            entry.dest = rob_tail;
+            units[4].reservation_station.push_back(entry);
+            RAT[fetch_reg.dest] = rob_tail;
+            rob_tail = (rob_tail + 1) % ROB.size();
+            rob_count++;
         }
         if(fetch_reg.op == OpCode::SLT ||fetch_reg.op == OpCode::SLTI){
             if(units[0].isfull()) {
@@ -389,6 +428,45 @@ public:
             ROB[rob_tail].ready = false;
             ROB[rob_tail].destReg = fetch_reg.dest;
             ROB[rob_tail].value = -1;
+            RSEntry entry;
+            entry.valid = true;
+            entry.op = fetch_reg.op;
+            if(RAT[fetch_reg.src1] != -1) {
+                int rob_idx = RAT[fetch_reg.src1];
+                if (ROB[rob_idx].ready) {
+                    entry.Valuej = ROB[rob_idx].value;
+                    entry.Vj = true;
+                } else {
+                    entry.Tagj = rob_idx;
+                    entry.Vj = false;
+                }
+            } else {
+                entry.Valuej = ARF[fetch_reg.src1];
+                entry.Vj = true;
+            }
+            if(fetch_reg.op == OpCode::SLTI){
+                entry.Valuek = fetch_reg.imm;
+                entry.Vk = true;
+            }else {
+            if(RAT[fetch_reg.src2] != -1) {
+                int rob_idx = RAT[fetch_reg.src2];
+                if (ROB[rob_idx].ready) {
+                    entry.Valuek = ROB[rob_idx].value;
+                    entry.Vk = true;
+                } else {
+                    entry.Tagk = rob_idx;
+                    entry.Vk = false;
+                }
+            } else {
+                entry.Valuek = ARF[fetch_reg.src2];
+                entry.Vk = true;
+            }
+        }
+            entry.dest = rob_tail;
+            units[0].reservation_station.push_back(entry);
+            RAT[fetch_reg.dest] = rob_tail;
+            rob_tail = (rob_tail + 1) % ROB.size();
+            rob_count++;
         }
     };
 
