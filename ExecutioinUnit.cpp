@@ -72,6 +72,12 @@ void adder(RSEntry* inst) {
 
     }
  }
+ bool ExecutionUnit::isfull(){
+    for (auto& entry : reservation_station) {
+        if (!entry.valid) return false;
+    }
+    return true;
+}
 
 void multiplier(RSEntry* inst) {
     if (inst->op == OpCode::MUL) {

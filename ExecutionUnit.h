@@ -20,12 +20,7 @@ public:
         this -> rs_size = rs_size;
         reservation_station.resize(rs_size);
     }
-    bool isfull() {
-        for (auto& entry : reservation_station) {
-            if (!entry.valid) return false;
-        }
-        return true;
-    }
+    bool isfull();
     void capture(int tag, int val);
     void executeCycle();
 private:
