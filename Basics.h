@@ -44,13 +44,14 @@ struct ROBEntry {
 };
 
 struct RSEntry {
-    bool valid;
+    bool valid = false;
     bool working = false;
     OpCode op;
     int Tagj = -1;
     int Tagk = -1;
     int Valuej = 0;
     int Valuek = 0;
+    int imm = 0; // stores the immediate offset for SW
     int dest = -1;
     int ROB_Entry; // the entry of this instruction in rob
     int current_latency = 0;

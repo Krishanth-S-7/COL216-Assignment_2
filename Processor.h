@@ -201,6 +201,7 @@ public:
             ROB[rob_tail].ready = false;
             ROB[rob_tail].destReg = fetch_reg.dest;
             ROB[rob_tail].value = -1;
+            ROB[rob_tail].inst_number = fetch_reg.pc;
             RSEntry entry;
             entry.valid = true;
             entry.op = fetch_reg.op;    
@@ -240,6 +241,7 @@ public:
             RAT[fetch_reg.dest] = rob_tail;
             rob_tail = (rob_tail + 1) % ROB.size();
             rob_count++;
+            is_stalled = false;
         }
         if(fetch_reg.op == OpCode::MUL) {
             if(units[1].isfull()) {
@@ -250,6 +252,7 @@ public:
             ROB[rob_tail].ready = false;
             ROB[rob_tail].destReg = fetch_reg.dest;
             ROB[rob_tail].value = -1;
+            ROB[rob_tail].inst_number = fetch_reg.pc;
             RSEntry entry;
             entry.valid = true;
             entry.op = fetch_reg.op;
@@ -284,6 +287,7 @@ public:
             RAT[fetch_reg.dest] = rob_tail;
             rob_tail = (rob_tail + 1) % ROB.size();
             rob_count++;
+            is_stalled = false;
         }
         if(fetch_reg.op == OpCode::DIV || fetch_reg.op == OpCode::REM) {
             if(units[2].isfull()) {
@@ -294,6 +298,7 @@ public:
             ROB[rob_tail].ready = false;
             ROB[rob_tail].destReg = fetch_reg.dest;
             ROB[rob_tail].value = -1;
+            ROB[rob_tail].inst_number = fetch_reg.pc;
             RSEntry entry;
             entry.valid = true;
             entry.op = fetch_reg.op;
@@ -328,6 +333,7 @@ public:
             RAT[fetch_reg.dest] = rob_tail;
             rob_tail = (rob_tail + 1) % ROB.size();
             rob_count++;
+            is_stalled = false;
         }
         if(fetch_reg.op == OpCode::BEQ || fetch_reg.op == OpCode::BNE || fetch_reg.op == OpCode::BLT || fetch_reg.op == OpCode::BLE) {
             if(units[3].isfull()) {
@@ -338,6 +344,7 @@ public:
             ROB[rob_tail].ready = false;
             ROB[rob_tail].destReg = -1;
             ROB[rob_tail].value = -1;
+            ROB[rob_tail].inst_number = fetch_reg.pc;
             RSEntry entry;
             entry.valid = true;
             entry.op = fetch_reg.op;
@@ -371,6 +378,7 @@ public:
             units[3].reservation_station.push_back(entry);
             rob_tail = (rob_tail + 1) % ROB.size();
             rob_count++;
+            is_stalled = false;
         }
         if(fetch_reg.op == OpCode::AND || fetch_reg.op == OpCode::OR || fetch_reg.op == OpCode::XOR ||fetch_reg.op == OpCode::ANDI || fetch_reg.op == OpCode::ORI || fetch_reg.op == OpCode::XORI) {
             if(units[4].isfull()) {
@@ -381,6 +389,7 @@ public:
             ROB[rob_tail].ready = false;
             ROB[rob_tail].destReg = fetch_reg.dest;
             ROB[rob_tail].value = -1;
+            ROB[rob_tail].inst_number = fetch_reg.pc;
             RSEntry entry;
             entry.valid = true;
             entry.op = fetch_reg.op;
@@ -420,6 +429,7 @@ public:
             RAT[fetch_reg.dest] = rob_tail;
             rob_tail = (rob_tail + 1) % ROB.size();
             rob_count++;
+            is_stalled = false;
         }
         if(fetch_reg.op == OpCode::SLT ||fetch_reg.op == OpCode::SLTI){
             if(units[0].isfull()) {
@@ -430,6 +440,7 @@ public:
             ROB[rob_tail].ready = false;
             ROB[rob_tail].destReg = fetch_reg.dest;
             ROB[rob_tail].value = -1;
+            ROB[rob_tail].inst_number = fetch_reg.pc;
             RSEntry entry;
             entry.valid = true;
             entry.op = fetch_reg.op;
@@ -469,9 +480,112 @@ public:
             RAT[fetch_reg.dest] = rob_tail;
             rob_tail = (rob_tail + 1) % ROB.size();
             rob_count++;
+            is_stalled = false;
+        }
+        if(fetch_reg.op == OpCode::LW){
+            if(lsq -> isfull()) {
+                is_stalled = true;
+                return;
+            }
+            ROB[rob_tail].valid = true;
+            ROB[rob_tail].ready = false;
+            ROB[rob_tail].destReg = fetch_reg.dest;
+            ROB[rob_tail].value = -1;
+            ROB[rob_tail].inst_number = fetch_reg.pc;
+            RSEntry entry;
+            entry.valid = true;
+            entry.op = fetch_reg.op;
+            if(RAT[fetch_reg.src1] != -1) {
+                int rob_idx = RAT[fetch_reg.src1];
+                if (ROB[rob_idx].ready) {
+                    entry.Valuej = ROB[rob_idx].value;
+                    entry.Vj = true;
+                } else {
+                    entry.Tagj = rob_idx;
+                    entry.Vj = false;
+                }
+            } else {
+                entry.Valuej = ARF[fetch_reg.src1];
+                entry.Vj = true;
+            }
+            entry.imm = fetch_reg.imm;
+            entry.dest = rob_tail;
+            lsq -> lsq_queue[lsq -> end_index] = entry;
+            lsq -> end_index = (lsq -> end_index + 1) % lsq -> rs_size;
+            RAT[fetch_reg.dest] = rob_tail;
+            rob_tail = (rob_tail + 1) % ROB.size();
+            rob_count++;
+            is_stalled = false;
+        }
+        if(fetch_reg.op == OpCode::SW){
+            if(lsq -> isfull()){
+                is_stalled = true;
+                return;
+            }
+            ROB[rob_tail].valid = true;
+            ROB[rob_tail].ready = false;
+            ROB[rob_tail].destReg = -2;
+            ROB[rob_tail].value = -1;
+            ROB[rob_tail].inst_number = fetch_reg.pc;
+            RSEntry entry;
+            entry.valid = true;
+            entry.op = fetch_reg.op;
+            entry.imm = fetch_reg.imm;
+            if(RAT[fetch_reg.src1] != -1) {
+                int rob_idx = RAT[fetch_reg.src1];
+                if (ROB[rob_idx].ready) {
+                    entry.Valuej = ROB[rob_idx].value;
+                    entry.Vj = true;
+                } else {
+                    entry.Tagj = rob_idx;
+                    entry.Vj = false;
+                }
+            } else {
+                entry.Valuej = ARF[fetch_reg.src1];
+                entry.Vj = true;
+            }
+            if(RAT[fetch_reg.src2] != -1) {
+                int rob_idx = RAT[fetch_reg.src2];
+                if (ROB[rob_idx].ready) {
+                    entry.Valuek = ROB[rob_idx].value;
+                    entry.Vk = true;
+                } else {
+                    entry.Tagk = rob_idx;
+                    entry.Vk = false;
+                }
+            } else {
+                entry.Valuek = ARF[fetch_reg.src2];
+                entry.Vk = true;
+             }       
+             entry.dest = rob_tail;
+            lsq -> lsq_queue[lsq -> end_index] = entry;
+            lsq -> end_index = (lsq -> end_index + 1) % lsq -> rs_size;
+            rob_tail = (rob_tail + 1) % ROB.size();
+            rob_count++;
+            is_stalled = false;
+        }
+        if(fetch_reg.op == OpCode::J){
+            if(units[3].isfull()) {
+                is_stalled = true;
+                return;
+            }
+            ROB[rob_tail].valid = true;
+            ROB[rob_tail].ready = false;
+            ROB[rob_tail].destReg = -1;
+            ROB[rob_tail].value = -1;
+            ROB[rob_tail].inst_number = fetch_reg.pc;
+            RSEntry entry;
+            entry.valid = true;
+            entry.op = fetch_reg.op;    
+            entry.Valuej = fetch_reg.imm;
+            entry.Vj = true;
+            entry.dest = rob_tail;
+            units[3].reservation_station.push_back(entry);
+            rob_tail = (rob_tail + 1) % ROB.size();
+            rob_count++;
+            is_stalled = false;
         }
     };
-
     void stageExecuteAndBroadcast();
 
     void stageCommit();
