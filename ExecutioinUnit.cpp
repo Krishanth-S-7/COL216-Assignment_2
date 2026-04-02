@@ -2,126 +2,156 @@
 
 void ExecutionUnit::capture(int tag, int val) {
     for (int i = 0; i < reservation_station.size(); i++) {
-        if (reservation_station[i].Tagj == tag) reservation_station[i].Valuej = val;
-        if (reservation_station[i].Tagk == tag) reservation_station[i].Valuek = val;
+        if (!reservation_station[i].valid) continue;
+        if (reservation_station[i].Tagj == tag) {
+            reservation_station[i].Vj = true;
+            reservation_station[i].Valuej = val;
+        }
+        if (reservation_station[i].Tagk == tag) {
+            reservation_station[i].Vk;
+            reservation_station[i].Valuek = val;
+        }
+        if (!reservation_station[i].working && reservation_station[i].Vj && reservation_station[i].Vk) ready_inst.push(&reservation_station[i]);
     }
 }
 
 void ExecutionUnit::executeCycle() {
+    has_result = false;
+    has_exception = false;
+    result_value = 0;
     if (pipeline.empty()) {
         pushIntoPipeline();
         if (!pipeline.empty() && pipeline.front()->current_latency == latency) {
-            runInst(pipeline[0]);
+            runInst(pipeline.front());
+            result_tag = pipeline.front()->ROB_Entry;
             removeEntry();
-            pipeline.pop_back();
+            pipeline.pop_front();
         }
         return;
     }
-    for (RSEntry* entry : pipeline) entry->current_latency++;
-    if (pipeline[0]->current_latency == latency) {
-        runInst(pipeline[0]);
+    for (auto & entry : pipeline) entry->current_latency++;
+    if (pipeline.front()->current_latency == latency) {
+        runInst(pipeline.front());
+        result_tag = pipeline.front()->ROB_Entry;
         removeEntry();
-        pipeline.erase(pipeline.begin());
+        pipeline.pop_front();
     }
     pushIntoPipeline();
 }
 
 void ExecutionUnit::pushIntoPipeline() {
-    for (int i = 0; i < reservation_station.size(); i++) {
-        if (reservation_station[i].Vj && reservation_station[i].Vk) {
-            reservation_station[i].current_latency++;
-            pipeline.push_back(&reservation_station[i]);
-            return;
-        }
-    }
+    if (pipeline.size() == latency || ready_inst.empty()) return;
+    pipeline.push_back(ready_inst.top());
+    ready_inst.top()->working = true;
+    ready_inst.top()->current_latency = 1;
+    ready_inst.pop();
 }
 
 void ExecutionUnit::removeEntry() {
     if (pipeline.empty()) return;
-    int ind = 0;
-    while (&reservation_station[ind] != pipeline[0]) ind++;
-    reservation_station.erase(reservation_station.begin()+ind);
+    reservation_station[pipeline.front()->ind].valid = false;
+    available_ind.push(pipeline.front()->ind);
 }
 
 void ExecutionUnit::runInst(RSEntry* inst) {
     if (name == UnitType::ADDER) {
-        adder(inst);
+        adder(inst, result_value, has_exception);
     } else if (name == UnitType::BRANCH) {
-        branch(inst);
+        branch(inst, result_value, has_exception);
     } else if (name == UnitType::DIVIDER) {
-        divider(inst);
+        divider(inst, result_value, has_exception);
     } else if (name == UnitType::LOADSTORE) {
-        loadstore(inst);
+        loadstore(inst, result_value, has_exception);
     } else if (name == UnitType::LOGIC) {
-        logic(inst);
+        logic(inst, result_value, has_exception);
     } else if (name == UnitType::MULTIPLIER) {
-        multiplier(inst);
+        multiplier(inst, result_value, has_exception);
     }
+    has_result = true;
 }
 
-void adder(RSEntry* inst) {
+void adder(RSEntry* inst, int& result_value, bool& has_exception) {
+    long long result = 0;
     if (inst->op == OpCode::ADD) {
-
+        result = (long long)inst->Valuej + (long long)inst->Valuek;
     } else if (inst->op == OpCode::ADDI) {
-
+        result = (long long)inst->Valuej + (long long)inst->Valuek;
     } else if (inst->op == OpCode::SUB) {
-
+        result = (long long)inst->Valuej - (long long)inst->Valuek;
     } else if (inst->op == OpCode::SLT) {
-
+        result = (long long)inst->Valuej < (long long)inst->Valuek;
     } else if (inst->op == OpCode::SLTI) {
-
+        result = (long long)inst->Valuej < (long long)inst->Valuek;
+    }
+    if (result > INT_MAX || result < INT_MIN) {
+        has_exception = true;
+    } else {
+        result_value = result;
     }
  }
  bool ExecutionUnit::isfull(){
-    for (auto& entry : reservation_station) {
-        if (!entry.valid) return false;
-    }
-    return true;
+    return available_ind.empty();
 }
 
-void multiplier(RSEntry* inst) {
+void multiplier(RSEntry* inst, int& result_value, bool& has_exception) {
+    long long result = 0;
     if (inst->op == OpCode::MUL) {
-
+        result = (long long)inst->Valuej * (long long)inst->Valuek;
+    }
+    if (result > INT_MAX || result < INT_MIN) {
+        has_exception = true;
+    } else {
+        result_value =result;
     }
 }
 
-void divider(RSEntry* inst) {
+void divider(RSEntry* inst, int& result_value, bool& has_exception) {
+    if (inst-> Valuek == 0) {
+        has_exception = true;
+        return;
+    }
+    long long result = 0;
     if (inst->op == OpCode::DIV) {
-
+        result = (long long)inst->Valuej / (long long)inst->Valuek;
     } else if (inst->op == OpCode::REM) {
-
+        result = (long long)inst->Valuej % (long long)inst->Valuek;
+    }
+    if (result > INT_MAX || result < INT_MIN) {
+        has_exception = true;
+    } else {
+        result_value =result;
     }
 }
 
-void logic(RSEntry* inst) {
+void logic(RSEntry* inst, int& result_value, bool& has_exception) {
     if (inst->op == OpCode::AND) {
-
+        result_value = inst->Valuej & inst->Valuek;
     } else if (inst->op == OpCode::ANDI) {
-
+        result_value = inst->Valuej & inst->Valuek;
     } else if (inst->op == OpCode::OR) {
-
+        result_value = inst->Valuej | inst->Valuek;
     } else if (inst->op == OpCode::ORI) {
-
+        result_value = inst->Valuej | inst->Valuek;
     } else if (inst->op == OpCode::XOR) {
-
+        result_value = inst->Valuej ^ inst->Valuek;
     } else if (inst->op == OpCode::XORI) {
-
+        result_value = inst->Valuej ^ inst->Valuek;
     }
 }
 
-void branch(RSEntry* inst) {
+void branch(RSEntry* inst, int& result_value, bool& has_exception) {
     if (inst->op == OpCode::BEQ) {
-
+        result_value = inst->Valuej == inst->Valuek;
     } else if (inst->op == OpCode::BNE) {
-
+        result_value = inst->Valuej != inst->Valuek;
     } else if (inst->op == OpCode::BLT) {
-
+        result_value = inst->Valuej < inst->Valuek;
     } else if (inst->op == OpCode::BLE) {
-
+        result_value = inst->Valuej <= inst->Valuek;
     }
 }
 
-void loadstore(RSEntry* inst) {
+void loadstore(RSEntry* inst, int& result_value, bool& has_exception) {
     if (inst->op == OpCode::LW) {
 
     } else if (inst->op == OpCode::SW) {
