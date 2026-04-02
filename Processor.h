@@ -107,6 +107,8 @@ public:
     int rob_head = 0;
     int rob_tail = 0;
     int rob_count = 0; 
+    int broadcast_tag;
+    int broadcast_value;
 
     // register alias table / reorder buffer
 
