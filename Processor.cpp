@@ -6,6 +6,531 @@ void Processor::broadcastOnCDB() {
     ROB[broadcast_tag].ready = true;
 }
 
+Instruction Processor::instParser(const std::string& line , long long line_number) {
+        Instruction inst;
+        string changed_line = line;
+        replace(changed_line.begin(), changed_line.end(), ',', ' ');
+        replace(changed_line.begin(), changed_line.end(), '(', ' ');
+        replace(changed_line.begin(), changed_line.end(), ')', ' ');  
+        std::istringstream iss(changed_line);
+        string word;
+        iss >> word;
+        inst.op = stringToOpCode(word);
+        if(word == "add" || word =="sub" || word == "mul" || word == "div" || word == "rem" || word == "and" || word == "or" || word == "xor" || word == "slt"){
+            string rd, rs1, rs2;
+            iss >> rd >> rs1 >> rs2;
+            inst.dest = stoi(rd.substr(1));
+            inst.src1 = stoi(rs1.substr(1));
+            inst.src2 = stoi(rs2.substr(1));
+        }
+        else if(word == "addi" || word == "slti" || word == "andi" || word == "ori" || word == "xori"){
+            string rd, rs1, imm;
+            iss >> rd >> rs1 >> imm;
+            inst.dest = stoi(rd.substr(1));
+            inst.src1 = stoi(rs1.substr(1));
+            inst.imm = stoi(imm);
+        }
+        else if (word == "lw"){
+            string rd, offset, rs1;
+            iss >> rd >> offset >> rs1;
+            inst.dest = stoi(rd.substr(1));
+            inst.src1 = stoi(rs1.substr(1));
+            inst.imm = stoi(offset);
+        }
+        else if(word == "sw"){
+            string rs2, offset, rs1;
+            iss >> rs2 >> offset >> rs1;
+            inst.src2 = stoi(rs2.substr(1));
+            inst.src1 = stoi(rs1.substr(1));
+            inst.imm = stoi(offset);
+        }
+        else if(word == "beq" || word == "bne" || word == "blt" || word == "ble"){
+            string rs1, rs2, imm;
+            iss >> rs1 >> rs2 >> imm;
+            inst.src1 = stoi(rs1.substr(1));
+            inst.src2 = stoi(rs2.substr(1));
+            inst.imm = stoi(imm);
+        }
+        else if(word == "j"){
+            string imm;
+            iss >> imm;
+            inst.imm = stoi(imm);
+        }
+        inst.pc = line_number;
+        return inst;
+    }
+
+OpCode Processor::stringToOpCode(const std::string& str) {
+        if (str == "add") return OpCode::ADD;
+        if (str == "sub") return OpCode::SUB;
+        if (str == "addi") return OpCode::ADDI;
+        if (str == "mul") return OpCode::MUL;
+        if (str == "div") return OpCode::DIV;
+        if (str == "rem") return OpCode::REM;
+        if (str == "lw") return OpCode::LW;
+        if (str == "sw") return OpCode::SW;
+        if (str == "beq") return OpCode::BEQ;
+        if (str == "bne") return OpCode::BNE;
+        if (str == "blt") return OpCode::BLT;
+        if (str == "ble") return OpCode::BLE;
+        if (str == "j") return OpCode::J;
+        if (str == "slt") return OpCode::SLT;
+        if (str == "slti") return OpCode::SLTI;
+        if (str == "and") return OpCode::AND;
+        if (str == "or") return OpCode::OR;
+        if (str == "xor") return OpCode::XOR;
+        if (str == "andi") return OpCode::ANDI;
+        if (str == "ori") return OpCode::ORI;
+        if (str == "xori") return OpCode::XORI;
+        throw std::invalid_argument("Invalid opcode: " + str);
+    }
+
+void Processor::loadProgram(const std::string& filename) {
+        std::ifstream file(filename);
+        if (!file.is_open()) {
+            cerr << "Error: Could not open file " << filename << endl;
+            return;
+        }
+        for(int i = 0 ; i < ARF.size(); i++) ARF[i] = 0;
+        for(int i = 0 ; i < Memory.size(); i++) Memory[i] = 0;
+        long long current_memory_index = 0;
+        std::string line;
+        long long line_number = 0;
+        while (std::getline(file, line)) {
+            if(line.empty()) continue;
+            size_t start_index = (line[0] == '-') ? 1 : 0;
+            if(line.length() <= start_index) continue;
+            if( line.find_first_not_of("0123456789", start_index) == string::npos){
+                this -> Memory[current_memory_index++] = stoi(line);
+            }
+            else{
+                this -> inst_memory.push_back(instParser(line , line_number));
+                line_number++;
+            }
+        }
+
+    }
+void Processor::InitializeROBEntry(bool valid, bool ready, int destReg, int value ,int inst_number) {
+        ROB[rob_tail].valid = valid;
+            ROB[rob_tail].ready = ready;
+            ROB[rob_tail].destReg = destReg;
+            ROB[rob_tail].value = value;
+            ROB[rob_tail].inst_number = inst_number;
+    // entry.valid = false;
+    // entry.ready = false;
+    // entry.destReg = -1;
+    // entry.value = -1;
+    // entry.has_exception = false;
+    // entry.inst_number = -1;
+}
+void Processor::setUpRSEntry(int src_reg, int& value, int& tag, bool& is_ready) {
+    if(RAT[src_reg] != -1) {
+                int rob_idx = RAT[src_reg];
+                if (ROB[rob_idx].ready) {
+                    value = ROB[rob_idx].value;
+                    is_ready = true;
+                } else {
+                    tag = rob_idx;
+                    is_ready = false;
+                }
+            } else {
+                value = ARF[src_reg];
+                is_ready = true;
+            }
+}
+void Processor::stageDecode() {
+        if(fetch_reg.pc == -1) return;
+        if (rob_count == ROB.size()) {
+            is_stalled = true;
+            return;
+        }
+        if (fetch_reg.op == OpCode::ADD || fetch_reg.op == OpCode::SUB || fetch_reg.op == OpCode::ADDI) {
+            if(units[0].isfull()) {
+                is_stalled = true;
+                return;
+            }
+            InitializeROBEntry(true, false, fetch_reg.dest, -1, fetch_reg.pc);
+            RSEntry entry;
+            entry.valid = true;
+            entry.op = fetch_reg.op;    
+            setUpRSEntry(fetch_reg.src1, entry.Valuej, entry.Tagj, entry.Vj);
+            // if(RAT[fetch_reg.src1] != -1) {
+            //     int rob_idx = RAT[fetch_reg.src1];
+            //     if (ROB[rob_idx].ready) {
+            //         entry.Valuej = ROB[rob_idx].value;
+            //         entry.Vj = true;
+            //     } else {
+            //         entry.Tagj = rob_idx;
+            //         entry.Vj = false;
+            //     }
+            // } else {
+            //     entry.Valuej = ARF[fetch_reg.src1];
+            //     entry.Vj = true;
+            // }
+            if(fetch_reg.op == OpCode::ADDI){
+                entry.Valuek = fetch_reg.imm;
+                entry.Vk = true;
+            }else {
+                setUpRSEntry(fetch_reg.src2, entry.Valuek, entry.Tagk, entry.Vk);
+            // if(RAT[fetch_reg.src2] != -1) {
+            //     int rob_idx = RAT[fetch_reg.src2];
+            //     if (ROB[rob_idx].ready) {
+            //         entry.Valuek = ROB[rob_idx].value;
+            //         entry.Vk = true;
+            //     } else {
+            //         entry.Tagk = rob_idx;
+            //         entry.Vk = false;
+            //     }
+            // } else {
+            //     entry.Valuek = ARF[fetch_reg.src2];
+            //     entry.Vk = true;
+            // }
+        }
+            entry.dest = rob_tail;
+            units[0].reservation_station.push_back(entry);
+            RAT[fetch_reg.dest] = rob_tail;
+            rob_tail = (rob_tail + 1) % ROB.size();
+            rob_count++;
+            is_stalled = false;
+        }
+        if(fetch_reg.op == OpCode::MUL) {
+            if(units[1].isfull()) {
+                is_stalled = true;
+                return;
+            }
+            InitializeROBEntry(true, false, fetch_reg.dest, -1, fetch_reg.pc);
+            RSEntry entry;
+            entry.valid = true;
+            entry.op = fetch_reg.op;
+                setUpRSEntry(fetch_reg.src1, entry.Valuej, entry.Tagj, entry.Vj);
+            // if(RAT[fetch_reg.src1] != -1) {
+            //     int rob_idx = RAT[fetch_reg.src1];
+            //     if (ROB[rob_idx].ready) {
+            //         entry.Valuej = ROB[rob_idx].value;
+            //         entry.Vj = true;
+            //     } else {
+            //         entry.Tagj = rob_idx;
+            //         entry.Vj = false;
+            //     }
+            // } else {
+            //     entry.Valuej = ARF[fetch_reg.src1];
+            //     entry.Vj = true;
+            // }
+                setUpRSEntry(fetch_reg.src2, entry.Valuek, entry.Tagk, entry.Vk);
+            // if(RAT[fetch_reg.src2] != -1) {
+            //     int rob_idx = RAT[fetch_reg.src2];
+            //     if (ROB[rob_idx].ready) {
+            //         entry.Valuek = ROB[rob_idx].value;
+            //         entry.Vk = true;
+            //     } else {
+            //         entry.Tagk = rob_idx;
+            //         entry.Vk = false;
+            //     }
+            // } else {
+            //     entry.Valuek = ARF[fetch_reg.src2];
+            //     entry.Vk = true;
+            // }
+            entry.dest = rob_tail;
+            units[1].reservation_station.push_back(entry);
+            RAT[fetch_reg.dest] = rob_tail;
+            rob_tail = (rob_tail + 1) % ROB.size();
+            rob_count++;
+            is_stalled = false;
+        }
+        if(fetch_reg.op == OpCode::DIV || fetch_reg.op == OpCode::REM) {
+            if(units[2].isfull()) {
+                is_stalled = true;
+                return;
+            }
+            InitializeROBEntry(true, false, fetch_reg.dest, -1, fetch_reg.pc);
+            RSEntry entry;
+            entry.valid = true;
+            entry.op = fetch_reg.op;
+                setUpRSEntry(fetch_reg.src1, entry.Valuej, entry.Tagj, entry.Vj);
+            // if(RAT[fetch_reg.src1] != -1) {
+            //     int rob_idx = RAT[fetch_reg.src1];
+            //     if (ROB[rob_idx].ready) {
+            //         entry.Valuej = ROB[rob_idx].value;
+            //         entry.Vj = true;
+            //     } else {
+            //         entry.Tagj = rob_idx;
+            //         entry.Vj = false;
+            //     }
+            // } else {
+            //     entry.Valuej = ARF[fetch_reg.src1];
+            //     entry.Vj = true;
+            // }
+                setUpRSEntry(fetch_reg.src2, entry.Valuek, entry.Tagk, entry.Vk);
+            // if(RAT[fetch_reg.src2] != -1) {
+            //     int rob_idx = RAT[fetch_reg.src2];
+            //     if (ROB[rob_idx].ready) {
+            //         entry.Valuek = ROB[rob_idx].value;
+            //         entry.Vk = true;
+            //     } else {
+            //         entry.Tagk = rob_idx;
+            //         entry.Vk = false;
+            //     }
+            // } else {
+            //     entry.Valuek = ARF[fetch_reg.src2];
+            //     entry.Vk = true;
+            // }
+            entry.dest = rob_tail;
+            units[2].reservation_station.push_back(entry);
+            RAT[fetch_reg.dest] = rob_tail;
+            rob_tail = (rob_tail + 1) % ROB.size();
+            rob_count++;
+            is_stalled = false;
+        }
+        if(fetch_reg.op == OpCode::BEQ || fetch_reg.op == OpCode::BNE || fetch_reg.op == OpCode::BLT || fetch_reg.op == OpCode::BLE) {
+            if(units[3].isfull()) {
+                is_stalled = true;
+                return;
+            }
+            InitializeROBEntry(true, false, -1, -1, fetch_reg.pc);
+            RSEntry entry;
+            entry.valid = true;
+            entry.op = fetch_reg.op;
+            setUpRSEntry(fetch_reg.src1, entry.Valuej, entry.Tagj, entry.Vj);
+            // if(RAT[fetch_reg.src1] != -1) {
+            //     int rob_idx = RAT[fetch_reg.src1];
+            //     if (ROB[rob_idx].ready) {
+            //         entry.Valuej = ROB[rob_idx].value;
+            //         entry.Vj = true;
+            //     } else {
+            //         entry.Tagj = rob_idx;
+            //         entry.Vj = false;
+            //     }
+            // } else {
+            //     entry.Valuej = ARF[fetch_reg.src1];
+            //     entry.Vj = true;
+            // }
+            setUpRSEntry(fetch_reg.src2, entry.Valuek, entry.Tagk, entry.Vk);
+            // if(RAT[fetch_reg.src2] != -1) {
+            //     int rob_idx = RAT[fetch_reg.src2];
+            //     if (ROB[rob_idx].ready) {
+            //         entry.Valuek = ROB[rob_idx].value;
+            //         entry.Vk = true;
+            //     } else {
+            //         entry.Tagk = rob_idx;
+            //         entry.Vk = false;
+            //     }
+            // } else {
+            //     entry.Valuek = ARF[fetch_reg.src2];
+            //     entry.Vk = true;
+            // }
+            entry.dest = rob_tail;
+            units[3].reservation_station.push_back(entry);
+            rob_tail = (rob_tail + 1) % ROB.size();
+            rob_count++;
+            is_stalled = false;
+        }
+        if(fetch_reg.op == OpCode::AND || fetch_reg.op == OpCode::OR || fetch_reg.op == OpCode::XOR ||fetch_reg.op == OpCode::ANDI || fetch_reg.op == OpCode::ORI || fetch_reg.op == OpCode::XORI) {
+            if(units[4].isfull()) {
+                is_stalled = true;
+                return;
+            }
+            InitializeROBEntry(true, false, fetch_reg.dest, -1, fetch_reg.pc);
+            RSEntry entry;
+            entry.valid = true;
+            entry.op = fetch_reg.op;
+            setUpRSEntry(fetch_reg.src1, entry.Valuej, entry.Tagj, entry.Vj);
+            // if(RAT[fetch_reg.src1] != -1) {
+            //     int rob_idx = RAT[fetch_reg.src1];
+            //     if (ROB[rob_idx].ready) {
+            //         entry.Valuej = ROB[rob_idx].value;
+            //         entry.Vj = true;
+            //     } else {
+            //         entry.Tagj = rob_idx;
+            //         entry.Vj = false;
+            //     }
+            // } else {
+            //     entry.Valuej = ARF[fetch_reg.src1];
+            //     entry.Vj = true;
+            // }
+            if(fetch_reg.op == OpCode::ANDI || fetch_reg.op == OpCode::ORI || fetch_reg.op == OpCode::XORI){
+                entry.Valuek = fetch_reg.imm;
+                entry.Vk = true;
+            }else {
+                setUpRSEntry(fetch_reg.src2, entry.Valuek, entry.Tagk, entry.Vk);
+            // if(RAT[fetch_reg.src2] != -1) {
+            //     int rob_idx = RAT[fetch_reg.src2];
+            //     if (ROB[rob_idx].ready) {
+            //         entry.Valuek = ROB[rob_idx].value;
+            //         entry.Vk = true;
+            //     } else {
+            //         entry.Tagk = rob_idx;
+            //         entry.Vk = false;
+            //     }
+            // } else {
+            //     entry.Valuek = ARF[fetch_reg.src2];
+            //     entry.Vk = true;
+            // }
+        }
+            entry.dest = rob_tail;
+            units[4].reservation_station.push_back(entry);
+            RAT[fetch_reg.dest] = rob_tail;
+            rob_tail = (rob_tail + 1) % ROB.size();
+            rob_count++;
+            is_stalled = false;
+        }
+        if(fetch_reg.op == OpCode::SLT ||fetch_reg.op == OpCode::SLTI){
+            if(units[0].isfull()) {
+                is_stalled = true;
+                return;
+            }
+            InitializeROBEntry(true, false, fetch_reg.dest, -1, fetch_reg.pc);
+            RSEntry entry;
+            entry.valid = true;
+            entry.op = fetch_reg.op;
+            setUpRSEntry(fetch_reg.src1, entry.Valuej, entry.Tagj, entry.Vj);
+            // if(RAT[fetch_reg.src1] != -1) {
+            //     int rob_idx = RAT[fetch_reg.src1];
+            //     if (ROB[rob_idx].ready) {
+            //         entry.Valuej = ROB[rob_idx].value;
+            //         entry.Vj = true;
+            //     } else {
+            //         entry.Tagj = rob_idx;
+            //         entry.Vj = false;
+            //     }
+            // } else {
+            //     entry.Valuej = ARF[fetch_reg.src1];
+            //     entry.Vj = true;
+            // }
+            if(fetch_reg.op == OpCode::SLTI){
+                entry.Valuek = fetch_reg.imm;
+                entry.Vk = true;
+            }else {
+                setUpRSEntry(fetch_reg.src2, entry.Valuek, entry.Tagk, entry.Vk);
+            // if(RAT[fetch_reg.src2] != -1) {
+            //     int rob_idx = RAT[fetch_reg.src2];
+            //     if (ROB[rob_idx].ready) {
+            //         entry.Valuek = ROB[rob_idx].value;
+            //         entry.Vk = true;
+            //     } else {
+            //         entry.Tagk = rob_idx;
+            //         entry.Vk = false;
+            //     }
+            // } else {
+            //     entry.Valuek = ARF[fetch_reg.src2];
+            //     entry.Vk = true;
+            // }
+        }
+            entry.dest = rob_tail;
+            units[0].reservation_station.push_back(entry);
+            RAT[fetch_reg.dest] = rob_tail;
+            rob_tail = (rob_tail + 1) % ROB.size();
+            rob_count++;
+            is_stalled = false;
+        }
+        if(fetch_reg.op == OpCode::LW){
+            if(lsq -> isfull()) {
+                is_stalled = true;
+                return;
+            }
+            ROB[rob_tail].valid = true;
+            ROB[rob_tail].ready = false;
+            ROB[rob_tail].destReg = fetch_reg.dest;
+            ROB[rob_tail].value = -1;
+            ROB[rob_tail].inst_number = fetch_reg.pc;
+            RSEntry entry;
+            entry.valid = true;
+            entry.op = fetch_reg.op;
+            setUpRSEntry(fetch_reg.src1, entry.Valuej, entry.Tagj, entry.Vj);
+            // if(RAT[fetch_reg.src1] != -1) {
+            //     int rob_idx = RAT[fetch_reg.src1];
+            //     if (ROB[rob_idx].ready) {
+            //         entry.Valuej = ROB[rob_idx].value;
+            //         entry.Vj = true;
+            //     } else {
+            //         entry.Tagj = rob_idx;
+            //         entry.Vj = false;
+            //     }
+            // } else {
+            //     entry.Valuej = ARF[fetch_reg.src1];
+            //     entry.Vj = true;
+            // }
+            entry.imm = fetch_reg.imm;
+            entry.dest = rob_tail;
+            lsq -> lsq_queue[lsq -> end_index] = entry;
+            lsq -> end_index = (lsq -> end_index + 1) % lsq -> rs_size;
+            RAT[fetch_reg.dest] = rob_tail;
+            rob_tail = (rob_tail + 1) % ROB.size();
+            rob_count++;
+            is_stalled = false;
+        }
+        if(fetch_reg.op == OpCode::SW){
+            if(lsq -> isfull()){
+                is_stalled = true;
+                return;
+            }
+                // ROB[rob_tail].valid = true;
+                // ROB[rob_tail].ready = false;
+                // ROB[rob_tail].destReg = -2;
+                // ROB[rob_tail].value = -1;
+                // ROB[rob_tail].inst_number = fetch_reg.pc;
+            InitializeROBEntry(true, false, -2, -1, fetch_reg.pc);
+            RSEntry entry;
+            entry.valid = true;
+            entry.op = fetch_reg.op;
+            entry.imm = fetch_reg.imm;
+            setUpRSEntry(fetch_reg.src1, entry.Valuej, entry.Tagj, entry.Vj);
+            // if(RAT[fetch_reg.src1] != -1) {
+            //     int rob_idx = RAT[fetch_reg.src1];
+            //     if (ROB[rob_idx].ready) {
+            //         entry.Valuej = ROB[rob_idx].value;
+            //         entry.Vj = true;
+            //     } else {
+            //         entry.Tagj = rob_idx;
+            //         entry.Vj = false;
+            //     }
+            // } else {
+            //     entry.Valuej = ARF[fetch_reg.src1];
+            //     entry.Vj = true;
+            // }
+                setUpRSEntry(fetch_reg.src2, entry.Valuek, entry.Tagk, entry.Vk);
+            // if(RAT[fetch_reg.src2] != -1) {
+            //     int rob_idx = RAT[fetch_reg.src2];
+            //     if (ROB[rob_idx].ready) {
+            //         entry.Valuek = ROB[rob_idx].value;
+            //         entry.Vk = true;
+            //     } else {
+            //         entry.Tagk = rob_idx;
+            //         entry.Vk = false;
+            //     }
+            // } else {
+            //     entry.Valuek = ARF[fetch_reg.src2];
+            //     entry.Vk = true;
+            //  }       
+             entry.dest = rob_tail;
+            lsq -> lsq_queue[lsq -> end_index] = entry;
+            lsq -> end_index = (lsq -> end_index + 1) % lsq -> rs_size;
+            rob_tail = (rob_tail + 1) % ROB.size();
+            rob_count++;
+            is_stalled = false;
+        }
+        if(fetch_reg.op == OpCode::J){
+            if(units[3].isfull()) {
+                is_stalled = true;
+                return;
+            }
+            ROB[rob_tail].valid = true;
+            ROB[rob_tail].ready = false;
+            ROB[rob_tail].destReg = -1;
+            ROB[rob_tail].value = -1;
+            ROB[rob_tail].inst_number = fetch_reg.pc;
+            RSEntry entry;
+            entry.valid = true;
+            entry.op = fetch_reg.op;    
+            entry.Valuej = fetch_reg.imm;
+            entry.Vj = true;
+            entry.dest = rob_tail;
+            units[3].reservation_station.push_back(entry);
+            rob_tail = (rob_tail + 1) % ROB.size();
+            rob_count++;
+            is_stalled = false;
+        }
+    }
+
 void Processor::flush() {
     while (ROB[rob_head].valid) {
         ROB[rob_head].valid = false;
