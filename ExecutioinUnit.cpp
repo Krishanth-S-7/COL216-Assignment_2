@@ -2,7 +2,8 @@
 
 void ExecutionUnit::capture(int tag, int val) {
     for (int i = 0; i < reservation_station.size(); i++) {
-        if (!reservation_station[i].valid) continue;
+        if (!reservation_station[i].valid)
+            continue;
         if (reservation_station[i].Tagj == tag) {
             reservation_station[i].Vj = true;
             reservation_station[i].Valuej = val;
@@ -11,7 +12,8 @@ void ExecutionUnit::capture(int tag, int val) {
             reservation_station[i].Vk;
             reservation_station[i].Valuek = val;
         }
-        if (!reservation_station[i].working && reservation_station[i].Vj && reservation_station[i].Vk) ready_inst.push(&reservation_station[i]);
+        if (!reservation_station[i].working && reservation_station[i].Vj && reservation_station[i].Vk)
+            ready_inst.push(&reservation_station[i]);
     }
 }
 
@@ -29,7 +31,8 @@ void ExecutionUnit::executeCycle() {
         }
         return;
     }
-    for (auto & entry : pipeline) entry->current_latency++;
+    for (auto& entry : pipeline)
+        entry->current_latency++;
     if (pipeline.front()->current_latency == latency) {
         runInst(pipeline.front());
         result_tag = pipeline.front()->ROB_Entry;
@@ -40,7 +43,8 @@ void ExecutionUnit::executeCycle() {
 }
 
 void ExecutionUnit::pushIntoPipeline() {
-    if (pipeline.size() == latency || ready_inst.empty()) return;
+    if (pipeline.size() == latency || ready_inst.empty())
+        return;
     pipeline.push_back(ready_inst.top());
     ready_inst.top()->working = true;
     ready_inst.top()->current_latency = 1;
@@ -48,7 +52,8 @@ void ExecutionUnit::pushIntoPipeline() {
 }
 
 void ExecutionUnit::removeEntry() {
-    if (pipeline.empty()) return;
+    if (pipeline.empty())
+        return;
     reservation_station[pipeline.front()->ind].valid = false;
     available_ind.push(pipeline.front()->ind);
 }
@@ -88,10 +93,8 @@ void adder(RSEntry* inst, int& result_value, bool& has_exception) {
     } else {
         result_value = result;
     }
- }
- bool ExecutionUnit::isfull(){
-    return available_ind.empty();
 }
+bool ExecutionUnit::isfull() { return available_ind.empty(); }
 
 void multiplier(RSEntry* inst, int& result_value, bool& has_exception) {
     long long result = 0;
@@ -101,12 +104,12 @@ void multiplier(RSEntry* inst, int& result_value, bool& has_exception) {
     if (result > INT_MAX || result < INT_MIN) {
         has_exception = true;
     } else {
-        result_value =result;
+        result_value = result;
     }
 }
 
 void divider(RSEntry* inst, int& result_value, bool& has_exception) {
-    if (inst-> Valuek == 0) {
+    if (inst->Valuek == 0) {
         has_exception = true;
         return;
     }
@@ -119,7 +122,7 @@ void divider(RSEntry* inst, int& result_value, bool& has_exception) {
     if (result > INT_MAX || result < INT_MIN) {
         has_exception = true;
     } else {
-        result_value =result;
+        result_value = result;
     }
 }
 
@@ -153,8 +156,6 @@ void branch(RSEntry* inst, int& result_value, bool& has_exception) {
 
 void loadstore(RSEntry* inst, int& result_value, bool& has_exception) {
     if (inst->op == OpCode::LW) {
-
     } else if (inst->op == OpCode::SW) {
-        
     }
 }

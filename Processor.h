@@ -1,10 +1,11 @@
 #pragma once
-#include <iostream>
-#include <fstream>
-#include <vector>
-#include <iomanip>
-#include <sstream>
 #include <algorithm>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
+#include <vector>
+
 #include "Basics.h"
 #include "BranchPredictor.h"
 #include "ExecutionUnit.h"
@@ -12,8 +13,9 @@
 using namespace std;
 class Processor {
     OpCode stringToOpCode(const std::string& str);
-    Instruction instParser(const std::string& line , long long line_number);
-public:
+    Instruction instParser(const std::string& line, long long line_number);
+
+   public:
     int pc;
     int clock_cycle;
     // pipeline registers
@@ -22,19 +24,18 @@ public:
     Instruction fetch_reg;
 
     // architectural state (do not change)
-    std::vector<int> ARF; // regFile
-    std::vector<int> Memory; // Memory
-    bool exception = false; // exception bit
+    std::vector<int> ARF;     // regFile
+    std::vector<int> Memory;  // Memory
+    bool exception = false;   // exception bit
     std::vector<int> RAT;
     std::vector<ROBEntry> ROB;
     int rob_head = 0;
     int rob_tail = 0;
-    int rob_count = 0; 
+    int rob_count = 0;
     int broadcast_tag;
     int broadcast_value;
 
     // register alias table / reorder buffer
-
 
     std::vector<ExecutionUnit> units;
     LoadStoreQueue* lsq;
@@ -48,13 +49,12 @@ public:
         ROB.resize(config.rob_size);
         RAT.resize(config.num_regs, -1);
 
-
         // Instantiate Hardware Units
-        ExecutionUnit adder(UnitType::ADDER, config.add_lat , config.adder_rs_size);
-        ExecutionUnit multiplier(UnitType::MULTIPLIER, config.mul_lat , config.mult_rs_size);
-        ExecutionUnit divider(UnitType::DIVIDER, config.div_lat , config.div_rs_size);
-        ExecutionUnit branch(UnitType::BRANCH, config.logic_lat , config.br_rs_size);
-        ExecutionUnit logic(UnitType::LOGIC, config.logic_lat , config.logic_rs_size);
+        ExecutionUnit adder(UnitType::ADDER, config.add_lat, config.adder_rs_size);
+        ExecutionUnit multiplier(UnitType::MULTIPLIER, config.mul_lat, config.mult_rs_size);
+        ExecutionUnit divider(UnitType::DIVIDER, config.div_lat, config.div_rs_size);
+        ExecutionUnit branch(UnitType::BRANCH, config.logic_lat, config.br_rs_size);
+        ExecutionUnit logic(UnitType::LOGIC, config.logic_lat, config.logic_rs_size);
 
         units.push_back(adder);
         units.push_back(multiplier);
@@ -74,17 +74,8 @@ public:
     void flush();
 
     void broadcastOnCDB();
-
-    void stageFetch() {
-        if (is_stalled) return;
-        if (pc < inst_memory.size()) {
-            fetch_reg = inst_memory[pc];
-            pc = bp.predict(pc, fetch_reg.imm, fetch_reg.op);
-        }else{
-            fetch_reg.pc = -1;
-        }
-    };
-    void stageDecode() ;
+    void stageFetch();
+    void stageDecode();
     void stageExecuteAndBroadcast();
     void InitializeROBEntry(bool valid, bool ready, int destReg, int value, int inst_number);
     void setUpRSEntry(int src_reg, int& value, int& tag, bool& is_ready);
@@ -99,7 +90,8 @@ public:
         std::cout << "\n=== ARCHITECTURAL STATE (CYCLE " << clock_cycle << ") ===\n";
         for (int i = 0; i < ARF.size(); i++) {
             std::cout << "x" << i << ": " << std::setw(4) << ARF[i] << " | ";
-            if ((i+1) % 8 == 0) std::cout << std::endl;
+            if ((i + 1) % 8 == 0)
+                std::cout << std::endl;
         }
         if (exception) {
             std::cout << "EXCEPTION raised by instruction " << pc + 1 << std::endl;

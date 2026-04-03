@@ -1,10 +1,10 @@
 #include <iostream>
 #include <string>
+
 #include "Processor.h"
 
 using namespace std;
 int main(int argc, char* argv[]) {
-
     if (argc < 2) {
         cerr << "Usage: ./main <filename.s> [-cycles N]\n";
         return 1;
@@ -17,7 +17,7 @@ int main(int argc, char* argv[]) {
 
     ProcessorConfig config;
     Processor cpu = Processor(config);
-    
+
     try {
         cpu.loadProgram(argv[1]);
     } catch (...) {
@@ -37,14 +37,13 @@ int main(int argc, char* argv[]) {
     if (max_cycles == -1) {
         if (cpu.exception) {
             cout << "\n[+] Execution halted due to exception after " << cpu.clock_cycle << " cycles.\n";
-        }
-        else {
+        } else {
             cout << "\n[+] Execution complete naturally in " << cpu.clock_cycle << " cycles.\n";
         }
     }
 
     cpu.dumpArchitecturalState();
-    for (int i=0;i<cpu.Memory.size();i++) {
+    for (int i = 0; i < cpu.Memory.size(); i++) {
         cout << cpu.Memory[i] << " ";
     }
     cout << endl;
