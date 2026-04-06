@@ -406,6 +406,7 @@ void Processor::flush() {
     lsq->result_value = 0;
     lsq->isSW = false;
     for (int i = 0; i < RAT.size(); i++) RAT[i] = -1;
+    for (int i = 0; i < bp.predictionslist.size(); i++) while (!bp.predictionslist[i].empty()) bp.predictionslist[i].pop();
 }
 
 void Processor::stageExecuteAndBroadcast() {
@@ -438,7 +439,8 @@ void Processor::stageCommit() {
         return;
     }
     if (ROB[rob_head].destReg == -1) {  // this means it was a branch instruction's entry
-        int state = bp.predictions[ROB[rob_head].inst_number];
+        int state = bp.predictionslist[ROB[rob_head].inst_number].front();
+        bp.predictionslist[ROB[rob_head].inst_number].pop();
         if (ROB[rob_head].value == 1) {
             if (state == 1) {
                 bp.instruction_state[ROB[rob_head].inst_number] = 0;
