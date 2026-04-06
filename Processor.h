@@ -48,12 +48,11 @@ class Processor {
         Memory.resize(config.mem_size);
         ROB.resize(config.rob_size);
         RAT.resize(config.num_regs, -1);
-
         // Instantiate Hardware Units
         ExecutionUnit adder(UnitType::ADDER, config.add_lat, config.adder_rs_size);
         ExecutionUnit multiplier(UnitType::MULTIPLIER, config.mul_lat, config.mult_rs_size);
         ExecutionUnit divider(UnitType::DIVIDER, config.div_lat, config.div_rs_size);
-        ExecutionUnit branch(UnitType::BRANCH, config.logic_lat, config.br_rs_size);
+        ExecutionUnit branch(UnitType::BRANCH, config.add_lat, config.br_rs_size);
         ExecutionUnit logic(UnitType::LOGIC, config.logic_lat, config.logic_rs_size);
 
         units.push_back(adder);
