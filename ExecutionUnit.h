@@ -19,12 +19,9 @@ class ExecutionUnit {
     bool has_result = false;  // result flag
     int result_tag;
     int result_value;
-    int result_value2;
-    bool isSW = false;
     bool has_exception = false;  // exception flag
     int rs_size;
     long long inst_counts = 0;
-    long long lsq_inst = 0;
     std::priority_queue<RSEntry*, std::vector<RSEntry*>, Compare> ready_inst;
     std::deque<RSEntry*> pipeline;
     std::queue<int> available_ind;  // use this queue to get the currently available indexes to store it RSEntry
@@ -33,8 +30,7 @@ class ExecutionUnit {
         this->latency = latency;
         this->rs_size = rs_size;
         reservation_station.resize(rs_size);
-        for (int i = 0; i < rs_size; i++)
-            available_ind.push(i);
+        for (int i = 0; i < rs_size; i++) available_ind.push(i);
     }
     bool isfull();
     void capture(int tag, int val);

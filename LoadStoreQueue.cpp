@@ -1,0 +1,77 @@
+#include "LoadStoreQueue.h"
+
+void LoadStoreQueue::capture(int tag, int val) {
+    for (int i = 0; i < reservation_station.size(); i++) {
+        if (!reservation_station[i].valid)
+            continue;
+        if (reservation_station[i].Tagj == tag) {
+            reservation_station[i].Vj = true;
+            reservation_station[i].Valuej = val;
+        }
+        if (reservation_station[i].Tagk == tag) {
+            reservation_station[i].Vk;
+            reservation_station[i].Valuek = val;
+        }
+        if (!reservation_station[i].working && reservation_station[i].Vj && reservation_station[i].Vk) ready_inst.push(&reservation_station[i]);
+    }
+}
+
+void LoadStoreQueue::executeCycle(std::vector<int>& Memory) {
+    has_result = false;
+    has_exception = false;
+    result_value = 0;
+    isSW = false;
+    if (pipeline.empty()) {
+        pushIntoPipeline();
+        if (!pipeline.empty() && pipeline.front()->current_latency == latency) {
+            runInst(pipeline.front(), Memory);
+            result_tag = pipeline.front()->dest;
+            removeEntry();
+            pipeline.pop_front();
+        }
+        return;
+    }
+    for (auto& entry : pipeline)
+        entry->current_latency++;
+    if (pipeline.front()->current_latency == latency) {
+        runInst(pipeline.front(), Memory);
+        result_tag = pipeline.front()->dest;
+        removeEntry();
+        pipeline.pop_front();
+    }
+    pushIntoPipeline();
+}
+
+void LoadStoreQueue::pushIntoPipeline() {
+    if (pipeline.size() == latency || ready_inst.empty() || ready_inst.top()->sequence_number != lsq_inst) return;
+    pipeline.push_back(ready_inst.top());
+    ready_inst.top()->working = true;
+    ready_inst.top()->current_latency = 1;
+    ready_inst.pop();
+    lsq_inst++;
+}
+
+void LoadStoreQueue::removeEntry() {
+    if (pipeline.empty()) return;
+    reservation_station[pipeline.front()->ind].valid = false;
+    available_ind.push(pipeline.front()->ind);
+}
+
+void LoadStoreQueue::runInst(RSEntry* inst, std::vector<int>& Memory) {
+    loadstore(inst, result_value, has_exception, result_value2, isSW, Memory);
+    has_result = true;
+}
+
+bool LoadStoreQueue::isfull() { return available_ind.empty(); }
+
+void loadstore(RSEntry* inst, int& result_value, bool& has_exception, int& result_value2, bool& isSW, std::vector<int>& Memory) {
+    if (inst->op == OpCode::LW) {
+        int addr = inst->Valuej + inst->imm;
+        if (addr < 0 || addr >= Memory.size()) has_exception = true; else result_value = Memory[addr];
+    } else if (inst->op == OpCode::SW) {
+        isSW = true;
+        result_value2 = inst->Valuej + inst->imm;
+        result_value = inst->Valuek;
+        if (result_value2 < 0 || result_value2 >= Memory.size()) has_exception = true;
+    }
+}
