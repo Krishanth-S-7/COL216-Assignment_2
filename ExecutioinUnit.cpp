@@ -21,6 +21,7 @@ void ExecutionUnit::executeCycle() {
     has_result = false;
     has_exception = false;
     result_value = 0;
+    isSW = false;
     if (pipeline.empty()) {
         pushIntoPipeline();
         if (!pipeline.empty() && pipeline.front()->current_latency == latency) {
@@ -43,12 +44,13 @@ void ExecutionUnit::executeCycle() {
 }
 
 void ExecutionUnit::pushIntoPipeline() {
-    if (pipeline.size() == latency || ready_inst.empty())
+    if (pipeline.size() == latency || ready_inst.empty() || (name == UnitType::LOADSTORE && ready_inst.top()->sequence_number != lsq_inst))
         return;
     pipeline.push_back(ready_inst.top());
     ready_inst.top()->working = true;
     ready_inst.top()->current_latency = 1;
     ready_inst.pop();
+    if (name == UnitType::LOADSTORE) lsq_inst++;
 }
 
 void ExecutionUnit::removeEntry() {
@@ -66,7 +68,7 @@ void ExecutionUnit::runInst(RSEntry* inst) {
     } else if (name == UnitType::DIVIDER) {
         divider(inst, result_value, has_exception);
     } else if (name == UnitType::LOADSTORE) {
-        loadstore(inst, result_value, has_exception);
+        loadstore(inst, result_value, has_exception, result_value2, isSW);
     } else if (name == UnitType::LOGIC) {
         logic(inst, result_value, has_exception);
     } else if (name == UnitType::MULTIPLIER) {
@@ -154,8 +156,12 @@ void branch(RSEntry* inst, int& result_value, bool& has_exception) {
     }
 }
 
-void loadstore(RSEntry* inst, int& result_value, bool& has_exception) {
+void loadstore(RSEntry* inst, int& result_value, bool& has_exception, int& result_value2, bool& isSW) {
     if (inst->op == OpCode::LW) {
+        result_value = inst->Valuej+inst->imm;
     } else if (inst->op == OpCode::SW) {
+        isSW = true;
+        result_value = inst->Valuej + inst->imm;
+        result_value2 = inst->Valuek;
     }
 }

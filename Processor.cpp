@@ -391,7 +391,20 @@ void Processor::stageExecuteAndBroadcast() {
         }
         if (units[i].has_result) {
             broadcast_tag = units[i].result_tag;
-            broadcast_value = units[i].result_value;
+            if (units[i].name == UnitType::LOADSTORE) {
+                if (units[i].result_value < 0 || units[i].result_value >= Memory.size()) {
+                    ROB[units[i].result_tag].has_exception = true;
+                }
+                ROB[units[i].result_tag].memory_addr = units[i].result_value;
+                if (units[i].isSW) {
+                    broadcast_value = units[i].result_value2;
+                    ROB[units[i].result_tag].destReg = -2;
+                } else {
+                    broadcast_value = Memory[units[i].result_value];
+                }
+            } else {
+                broadcast_value = units[i].result_value;
+            }
             broadcastOnCDB();
         }
     }
@@ -433,9 +446,10 @@ void Processor::stageCommit() {
                 bp.counter = 3;
             }
         }
-    } else if (ROB[rob_head].destReg != -2) {
-        if (ROB[rob_head].destReg != 0)
-            ARF[ROB[rob_head].destReg] = ROB[rob_head].value;
+    } else if (ROB[rob_head].destReg == -2) {
+        Memory[ROB[rob_head].memory_addr] = ROB[rob_head].value;
+    }else if (ROB[rob_head].destReg != 0) {
+        ARF[ROB[rob_head].destReg] = ROB[rob_head].value;
     }
     ROB[rob_head].valid = false;
     rob_head++;
