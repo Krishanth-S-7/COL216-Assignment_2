@@ -62,6 +62,7 @@ struct ROBEntry {
     int destReg;  // set -1 for branch instructions, -2 for store word
     int value;
     bool has_exception;
+    int memory_addr;
     int inst_number;  // to set the pc if this rob entry caused exception and if this instruction was a branch
                       // instructions then need to check what was predicted to assert its correctness
 };
@@ -75,11 +76,11 @@ struct RSEntry {
     int Valuej = 0;
     int Valuek = 0;
     int imm = 0;  // stores the immediate offset for SW
-    int dest = -1;
-    int ROB_Entry;  // the entry of this instruction in rob
+    int dest = -1; // the entry of this instruction in rob
     int current_latency = 0;
     bool Vj = false;
     bool Vk = false;
+    // assuming sequence_number starts from 0
     long long sequence_number;  // a sequence number to track the oldest instruciton, you can get this value from
                                 // inst_counts in units
     int ind;                    // the slot index of RS Table in which this entry goes

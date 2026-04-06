@@ -30,8 +30,7 @@ class ExecutionUnit {
         this->latency = latency;
         this->rs_size = rs_size;
         reservation_station.resize(rs_size);
-        for (int i = 0; i < rs_size; i++)
-            available_ind.push(i);
+        for (int i = 0; i < rs_size; i++) available_ind.push(i);
     }
     bool isfull();
     void capture(int tag, int val);

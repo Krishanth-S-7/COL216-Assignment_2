@@ -380,20 +380,36 @@ void Processor::flush() {
         units[i].has_result = false;
         units[i].result_value = 0;
     }
-    // will flush RAT and load store queues later
+    for (auto& entry : lsq->reservation_station) entry.valid = false;
+    lsq->pipeline.clear();
+    while (!lsq->ready_inst.empty()) lsq->ready_inst.pop();
+    while (!lsq->available_ind.empty()) lsq->available_ind.pop();
+    for (int j = 0; j < lsq->reservation_station.size(); j++) lsq->available_ind.push(j);
+    lsq->has_exception = false;
+    lsq->has_result = false;
+    lsq->result_value2 = 0;
+    lsq->result_value = 0;
+    lsq->isSW = false;
+    for (int i = 0; i < RAT.size(); i++) RAT[i] = -1;
 }
 
 void Processor::stageExecuteAndBroadcast() {
     for (int i = 0; i < units.size(); i++) {
         units[i].executeCycle();
-        if (units[i].has_exception) {
-            ROB[units[i].result_tag].has_exception = true;
-        }
+        if (units[i].has_exception) ROB[units[i].result_tag].has_exception = true;
         if (units[i].has_result) {
             broadcast_tag = units[i].result_tag;
             broadcast_value = units[i].result_value;
             broadcastOnCDB();
         }
+    }
+    lsq->executeCycle(Memory);
+    if (lsq->has_exception) ROB[lsq->result_tag].has_exception = true;
+    if (lsq->has_result) {
+        if (lsq->isSW) ROB[lsq->result_tag].memory_addr = lsq->result_value2;
+        broadcast_tag = lsq->result_tag;
+        broadcast_value = lsq->result_value;
+        broadcastOnCDB();
     }
 }
 
@@ -433,12 +449,13 @@ void Processor::stageCommit() {
                 bp.counter = 3;
             }
         }
-    } else if (ROB[rob_head].destReg != -2) {
-        if (ROB[rob_head].destReg != 0)
-            ARF[ROB[rob_head].destReg] = ROB[rob_head].value;
+    } else if (ROB[rob_head].destReg == -2) {
+        Memory[ROB[rob_head].memory_addr] = ROB[rob_head].value;
+    }else if (ROB[rob_head].destReg != 0) { // 0th register is always 0
+        ARF[ROB[rob_head].destReg] = ROB[rob_head].value;
+        if (RAT[ROB[rob_head].destReg] == rob_head) RAT[ROB[rob_head].destReg] = -1;
     }
     ROB[rob_head].valid = false;
     rob_head++;
     rob_head %= ROB.size();
-    // need to update the RAT also, will do it later
 }
