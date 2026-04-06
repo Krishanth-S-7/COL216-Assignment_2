@@ -158,6 +158,7 @@ void Processor::stageFetch() {
     if (pc < inst_memory.size()) {
         fetch_reg = inst_memory[pc];
         pc = bp.predict(pc, fetch_reg.imm, fetch_reg.op);
+        bp.predictionslist[fetch_reg.pc].push(pc);
     } else {
         fetch_reg.pc = -1;
     }
