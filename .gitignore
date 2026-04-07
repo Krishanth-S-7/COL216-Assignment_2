@@ -1,4 +1,5 @@
 test.s
+code1.s
 AllCommands.txt
 .clang-format
 main
