@@ -12,7 +12,10 @@ void LoadStoreQueue::capture(int tag, int val) {
             reservation_station[i].Vk = true;
             reservation_station[i].Valuek = val;
         }
-        if (!reservation_station[i].working && reservation_station[i].Vj && reservation_station[i].Vk) ready_inst.push(&reservation_station[i]);
+        if (!reservation_station[i].working && !reservation_station[i].inQueue && reservation_station[i].Vj && reservation_station[i].Vk) {
+            ready_inst.push(&reservation_station[i]);
+            reservation_station[i].inQueue = true;
+        }
     }
 }
 
@@ -54,6 +57,11 @@ void LoadStoreQueue::pushIntoPipeline() {
 void LoadStoreQueue::removeEntry() {
     if (pipeline.empty()) return;
     reservation_station[pipeline.front()->ind].valid = false;
+    reservation_station[pipeline.front()->ind].Vj = false;
+    reservation_station[pipeline.front()->ind].Vk = false;
+    reservation_station[pipeline.front()->ind].inQueue = false;
+    reservation_station[pipeline.front()->ind].working = false;
+    reservation_station[pipeline.front()->ind].current_latency = 0;
     available_ind.push(pipeline.front()->ind);
 }
 

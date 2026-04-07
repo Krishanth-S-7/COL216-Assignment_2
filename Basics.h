@@ -79,6 +79,7 @@ struct RSEntry {
     int current_latency = 0;
     bool Vj = false;
     bool Vk = false;
+    bool inQueue = false;
     // assuming sequence_number starts from 0
     long long sequence_number;  // a sequence number to track the oldest instruciton, you can get this value from
                                 // inst_counts in units
