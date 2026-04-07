@@ -3,6 +3,7 @@
 #include <deque>
 #include <string>
 #include <vector>
+#include <map>
 
 #include "Basics.h"
 
@@ -17,6 +18,7 @@ class LoadStoreQueue {
     std::vector<RSEntry> reservation_station;
     std::deque<RSEntry*> pipeline;
     std::priority_queue<RSEntry*, std::vector<RSEntry*>, Compare> ready_inst;
+    std::map<int, std::pair<int, int>> uncommitedSw;
     std::queue<int> available_ind;  // use this queue to get the currently available indexes to store it RSEntry
     bool has_result = false;  // result flag
     int result_tag;

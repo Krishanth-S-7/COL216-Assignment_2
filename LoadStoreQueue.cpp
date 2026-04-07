@@ -58,20 +58,24 @@ void LoadStoreQueue::removeEntry() {
 }
 
 void LoadStoreQueue::runInst(RSEntry* inst, std::vector<int>& Memory) {
-    loadstore(inst, result_value, has_exception, result_value2, isSW, Memory);
+    loadstore(inst, result_value, has_exception, result_value2, isSW, Memory, uncommitedSw);
     has_result = true;
 }
 
 bool LoadStoreQueue::isfull() { return available_ind.empty(); }
 
-void loadstore(RSEntry* inst, int& result_value, bool& has_exception, int& result_value2, bool& isSW, std::vector<int>& Memory) {
+void loadstore(RSEntry* inst, int& result_value, bool& has_exception, int& result_value2, bool& isSW, std::vector<int>& Memory, std::map<int, std::pair<int, int>>& uncommitedSw) {
     if (inst->op == OpCode::LW) {
         int addr = inst->Valuej + inst->imm;
-        if (addr < 0 || addr >= Memory.size()) has_exception = true; else result_value = Memory[addr];
+        if (addr < 0 || addr >= Memory.size()) {
+            has_exception = true;
+        } else {
+            if (uncommitedSw.find(addr) == uncommitedSw.end()) result_value = Memory[addr]; else result_value = uncommitedSw[addr].first;
+        }
     } else if (inst->op == OpCode::SW) {
         isSW = true;
         result_value2 = inst->Valuej + inst->imm;
         result_value = inst->Valuek;
-        if (result_value2 < 0 || result_value2 >= Memory.size()) has_exception = true;
+        if (result_value2 < 0 || result_value2 >= Memory.size()) has_exception = true; else uncommitedSw[result_value2] = {result_value, inst->dest};
     }
 }
