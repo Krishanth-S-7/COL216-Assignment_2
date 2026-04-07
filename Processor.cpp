@@ -435,8 +435,14 @@ void Processor::flush() {
     rob_tail = 0;
     rob_count = 0;
     for (int i = 0; i < units.size(); i++) {
-        for (auto& entry : units[i].reservation_station)
+        for (auto& entry : units[i].reservation_station) {
             entry.valid = false;
+            entry.Vj = false;
+            entry.Vk = false;
+            entry.current_latency = 0;
+            entry.working = false;
+            entry.inQueue = false;
+        }
         units[i].pipeline.clear();
         while (!units[i].ready_inst.empty())
             units[i].ready_inst.pop();
@@ -449,8 +455,14 @@ void Processor::flush() {
         units[i].result_value = 0;
         units[i].inst_counts = 0;
     }
-    for (auto& entry : lsq->reservation_station)
+    for (auto& entry : lsq->reservation_station) {
         entry.valid = false;
+        entry.Vj = false;
+        entry.Vk = false;
+        entry.current_latency = 0;
+        entry.working = false;
+        entry.inQueue = false;
+    }
     lsq->pipeline.clear();
     while (!lsq->ready_inst.empty())
         lsq->ready_inst.pop();
