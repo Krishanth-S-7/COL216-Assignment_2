@@ -384,7 +384,7 @@ void Processor::stageDecode() {
         }
         ROB[rob_tail].valid = true;
         ROB[rob_tail].ready = true;
-        ROB[rob_tail].destReg = -1;
+        ROB[rob_tail].destReg = -3;
         ROB[rob_tail].value = -1;
         ROB[rob_tail].inst_number = fetch_reg.pc;
         // RSEntry entry;
@@ -441,6 +441,7 @@ void Processor::flush() {
     lsq->result_value = 0;
     lsq->lsq_inst = 0;
     lsq->inst_counts = 0;
+    lsq->uncommitedSw.clear();
     lsq->isSW = false;
     for (int i = 0; i < RAT.size(); i++)
         RAT[i] = -1;
@@ -518,7 +519,7 @@ void Processor::stageCommit() {
     } else if (ROB[rob_head].destReg == -2) {
         if (lsq->uncommitedSw[ROB[rob_head].memory_addr].second == rob_head) lsq->uncommitedSw.erase(ROB[rob_head].memory_addr);
         Memory[ROB[rob_head].memory_addr] = ROB[rob_head].value;
-    } else if (ROB[rob_head].destReg != 0) {  // 0th register is always 0
+    } else if (ROB[rob_head].destReg > 0) {  // 0th register is always 0
         ARF[ROB[rob_head].destReg] = ROB[rob_head].value;
         if (RAT[ROB[rob_head].destReg] == rob_head)
             RAT[ROB[rob_head].destReg] = -1;

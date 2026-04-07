@@ -9,7 +9,7 @@ void ExecutionUnit::capture(int tag, int val) {
             reservation_station[i].Valuej = val;
         }
         if (reservation_station[i].Tagk == tag) {
-            reservation_station[i].Vk;
+            reservation_station[i].Vk = true;
             reservation_station[i].Valuek = val;
         }
         if (!reservation_station[i].working && reservation_station[i].Vj && reservation_station[i].Vk)
