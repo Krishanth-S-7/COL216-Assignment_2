@@ -24,6 +24,7 @@ class LoadStoreQueue {
     int result_value2;
     bool isSW = false;
     long long inst_counts = 0;
+    long long lsq_inst = 0;
     int rs_size;
     bool has_exception = false;  // exception flag
     int store_data = 0;
@@ -34,11 +35,10 @@ class LoadStoreQueue {
         for (int i = 0; i < rs_size; i++) available_ind.push(i);
     }
     bool isfull();
-    void capture(int tag, int val) {};
+    void capture(int tag, int val);
     void executeCycle(std::vector<int>& Memory);
     private:
     void pushIntoPipeline();
     void removeEntry();
     void runInst(RSEntry* inst, std::vector<int>& Memory);
-    long long lsq_inst = 0;
 };

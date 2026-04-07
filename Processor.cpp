@@ -3,6 +3,7 @@
 void Processor::broadcastOnCDB() {
     for (int i = 0; i < units.size(); i++)
         units[i].capture(broadcast_tag, broadcast_value);
+    lsq->capture(broadcast_tag, broadcast_value);
     ROB[broadcast_tag].value = broadcast_value;
     ROB[broadcast_tag].ready = true;
 }
@@ -136,6 +137,7 @@ void Processor::InitializeROBEntry(bool valid, bool ready, int destReg, int valu
     ROB[rob_tail].destReg = destReg;
     ROB[rob_tail].value = value;
     ROB[rob_tail].inst_number = inst_number;
+    ROB[rob_tail].memory_addr = -1;
 }
 void Processor::setUpRSEntry(int src_reg, int& value, int& tag, bool& is_ready) {
     if (RAT[src_reg] != -1) {
@@ -187,10 +189,13 @@ void Processor::stageDecode() {
             setUpRSEntry(fetch_reg.src2, entry.Valuek, entry.Tagk, entry.Vk);
         }
         entry.dest = rob_tail;
+        entry.sequence_number = units[0].inst_counts;
+        units[0].inst_counts++;
         int RS_index = units[0].available_ind.front();
         units[0].reservation_station[RS_index] = entry;
         units[0].available_ind.pop();
-        RAT[fetch_reg.dest] = rob_tail;
+        if (fetch_reg.dest != 0)
+            RAT[fetch_reg.dest] = rob_tail;
         rob_tail = (rob_tail + 1) % ROB.size();
         rob_count++;
         is_stalled = false;
@@ -207,10 +212,13 @@ void Processor::stageDecode() {
         setUpRSEntry(fetch_reg.src1, entry.Valuej, entry.Tagj, entry.Vj);
         setUpRSEntry(fetch_reg.src2, entry.Valuek, entry.Tagk, entry.Vk);
         entry.dest = rob_tail;
+        entry.sequence_number = units[1].inst_counts;
+        units[1].inst_counts++;
         int RS_index = units[1].available_ind.front();
         units[1].reservation_station[RS_index] = entry;
         units[1].available_ind.pop();
-        RAT[fetch_reg.dest] = rob_tail;
+        if (fetch_reg.dest != 0)
+            RAT[fetch_reg.dest] = rob_tail;
         rob_tail = (rob_tail + 1) % ROB.size();
         rob_count++;
         is_stalled = false;
@@ -227,10 +235,13 @@ void Processor::stageDecode() {
         setUpRSEntry(fetch_reg.src1, entry.Valuej, entry.Tagj, entry.Vj);
         setUpRSEntry(fetch_reg.src2, entry.Valuek, entry.Tagk, entry.Vk);
         entry.dest = rob_tail;
+        entry.sequence_number = units[2].inst_counts;
+        units[2].inst_counts++;
         int RS_index = units[2].available_ind.front();
         units[2].reservation_station[RS_index] = entry;
         units[2].available_ind.pop();
-        RAT[fetch_reg.dest] = rob_tail;
+        if (fetch_reg.dest != 0)
+            RAT[fetch_reg.dest] = rob_tail;
         rob_tail = (rob_tail + 1) % ROB.size();
         rob_count++;
         is_stalled = false;
@@ -248,6 +259,8 @@ void Processor::stageDecode() {
         setUpRSEntry(fetch_reg.src1, entry.Valuej, entry.Tagj, entry.Vj);
         setUpRSEntry(fetch_reg.src2, entry.Valuek, entry.Tagk, entry.Vk);
         entry.dest = rob_tail;
+        entry.sequence_number = units[3].inst_counts;
+        units[3].inst_counts++;
         int RS_index = units[3].available_ind.front();
         units[3].reservation_station[RS_index] = entry;
         units[3].available_ind.pop();
@@ -273,10 +286,13 @@ void Processor::stageDecode() {
             setUpRSEntry(fetch_reg.src2, entry.Valuek, entry.Tagk, entry.Vk);
         }
         entry.dest = rob_tail;
+        entry.sequence_number = units[4].inst_counts;
+        units[4].inst_counts++;
         int RS_index = units[4].available_ind.front();
         units[4].reservation_station[RS_index] = entry;
         units[4].available_ind.pop();
-        RAT[fetch_reg.dest] = rob_tail;
+        if (fetch_reg.dest != 0)
+            RAT[fetch_reg.dest] = rob_tail;
         rob_tail = (rob_tail + 1) % ROB.size();
         rob_count++;
         is_stalled = false;
@@ -298,10 +314,13 @@ void Processor::stageDecode() {
             setUpRSEntry(fetch_reg.src2, entry.Valuek, entry.Tagk, entry.Vk);
         }
         entry.dest = rob_tail;
+        entry.sequence_number = units[0].inst_counts;
+        units[0].inst_counts++;
         int RS_index = units[0].available_ind.front();
         units[0].reservation_station[RS_index] = entry;
         units[0].available_ind.pop();
-        RAT[fetch_reg.dest] = rob_tail;
+        if (fetch_reg.dest != 0)
+            RAT[fetch_reg.dest] = rob_tail;
         rob_tail = (rob_tail + 1) % ROB.size();
         rob_count++;
         is_stalled = false;
@@ -322,9 +341,15 @@ void Processor::stageDecode() {
         setUpRSEntry(fetch_reg.src1, entry.Valuej, entry.Tagj, entry.Vj);
         entry.imm = fetch_reg.imm;
         entry.dest = rob_tail;
-        lsq->lsq_queue[lsq->end_index] = entry;
-        lsq->end_index = (lsq->end_index + 1) % lsq->rs_size;
-        RAT[fetch_reg.dest] = rob_tail;
+        entry.sequence_number = lsq->inst_counts;
+        lsq->inst_counts++;
+        lsq->reservation_station[lsq->available_ind.front()] = entry;
+        lsq->available_ind.pop();
+        // lsq->lsq_queue[lsq->end_index] = entry;
+        // lsq->end_index = (lsq->end_index + 1) % lsq->rs_size;
+        if (fetch_reg.dest != 0)
+             RAT[fetch_reg.dest] = rob_tail;
+        // RAT[fetch_reg.dest] = rob_tail;
         rob_tail = (rob_tail + 1) % ROB.size();
         rob_count++;
         is_stalled = false;
@@ -339,11 +364,15 @@ void Processor::stageDecode() {
         entry.valid = true;
         entry.op = fetch_reg.op;
         entry.imm = fetch_reg.imm;
+        entry.sequence_number = lsq->inst_counts;
+        lsq->inst_counts++;
         setUpRSEntry(fetch_reg.src1, entry.Valuej, entry.Tagj, entry.Vj);
         setUpRSEntry(fetch_reg.src2, entry.Valuek, entry.Tagk, entry.Vk);
         entry.dest = rob_tail;
-        lsq->lsq_queue[lsq->end_index] = entry;
-        lsq->end_index = (lsq->end_index + 1) % lsq->rs_size;
+        lsq->reservation_station[lsq->available_ind.front()] = entry;
+        lsq->available_ind.pop();
+        // lsq->lsq_queue[lsq->end_index] = entry;
+        // lsq->end_index = (lsq->end_index + 1) % lsq->rs_size;
         rob_tail = (rob_tail + 1) % ROB.size();
         rob_count++;
         is_stalled = false;
@@ -354,19 +383,19 @@ void Processor::stageDecode() {
             return;
         }
         ROB[rob_tail].valid = true;
-        ROB[rob_tail].ready = false;
+        ROB[rob_tail].ready = true;
         ROB[rob_tail].destReg = -1;
         ROB[rob_tail].value = -1;
         ROB[rob_tail].inst_number = fetch_reg.pc;
-        RSEntry entry;
-        entry.valid = true;
-        entry.op = fetch_reg.op;
-        entry.Valuej = fetch_reg.imm;
-        entry.Vj = true;
-        entry.dest = rob_tail;
-        int RS_index = units[3].available_ind.front();
-        units[3].reservation_station[RS_index] = entry;
-        units[3].available_ind.pop();
+        // RSEntry entry;
+        // entry.valid = true;
+        // entry.op = fetch_reg.op;
+        // entry.Valuej = fetch_reg.imm;
+        // entry.Vj = true;
+        // entry.dest = rob_tail;
+        // int RS_index = units[3].available_ind.front();
+        // units[3].reservation_station[RS_index] = entry;
+        // units[3].available_ind.pop();
         rob_tail = (rob_tail + 1) % ROB.size();
         rob_count++;
         is_stalled = false;
@@ -381,6 +410,7 @@ void Processor::flush() {
     }
     rob_head = 0;
     rob_tail = 0;
+    rob_count = 0;
     for (int i = 0; i < units.size(); i++) {
         for (auto& entry : units[i].reservation_station)
             entry.valid = false;
@@ -394,25 +424,36 @@ void Processor::flush() {
         units[i].has_exception = false;
         units[i].has_result = false;
         units[i].result_value = 0;
+        units[i].inst_counts = 0;
     }
-    for (auto& entry : lsq->reservation_station) entry.valid = false;
+    for (auto& entry : lsq->reservation_station)
+        entry.valid = false;
     lsq->pipeline.clear();
-    while (!lsq->ready_inst.empty()) lsq->ready_inst.pop();
-    while (!lsq->available_ind.empty()) lsq->available_ind.pop();
-    for (int j = 0; j < lsq->reservation_station.size(); j++) lsq->available_ind.push(j);
+    while (!lsq->ready_inst.empty())
+        lsq->ready_inst.pop();
+    while (!lsq->available_ind.empty())
+        lsq->available_ind.pop();
+    for (int j = 0; j < lsq->reservation_station.size(); j++)
+        lsq->available_ind.push(j);
     lsq->has_exception = false;
     lsq->has_result = false;
     lsq->result_value2 = 0;
     lsq->result_value = 0;
+    lsq->lsq_inst = 0;
+    lsq->inst_counts = 0;
     lsq->isSW = false;
-    for (int i = 0; i < RAT.size(); i++) RAT[i] = -1;
-    for (int i = 0; i < bp.predictionslist.size(); i++) while (!bp.predictionslist[i].empty()) bp.predictionslist[i].pop();
+    for (int i = 0; i < RAT.size(); i++)
+        RAT[i] = -1;
+    for (int i = 0; i < bp.predictionslist.size(); i++)
+        while (!bp.predictionslist[i].empty())
+            bp.predictionslist[i].pop();
 }
 
 void Processor::stageExecuteAndBroadcast() {
     for (int i = 0; i < units.size(); i++) {
         units[i].executeCycle();
-        if (units[i].has_exception) ROB[units[i].result_tag].has_exception = true;
+        if (units[i].has_exception)
+            ROB[units[i].result_tag].has_exception = true;
         if (units[i].has_result) {
             broadcast_tag = units[i].result_tag;
             broadcast_value = units[i].result_value;
@@ -420,9 +461,11 @@ void Processor::stageExecuteAndBroadcast() {
         }
     }
     lsq->executeCycle(Memory);
-    if (lsq->has_exception) ROB[lsq->result_tag].has_exception = true;
+    if (lsq->has_exception)
+        ROB[lsq->result_tag].has_exception = true;
     if (lsq->has_result) {
-        if (lsq->isSW) ROB[lsq->result_tag].memory_addr = lsq->result_value2;
+        if (lsq->isSW)
+            ROB[lsq->result_tag].memory_addr = lsq->result_value2;
         broadcast_tag = lsq->result_tag;
         broadcast_value = lsq->result_value;
         broadcastOnCDB();
@@ -444,14 +487,17 @@ void Processor::stageCommit() {
         if (ROB[rob_head].value == 1) {
             if (state == 1) {
                 bp.instruction_state[ROB[rob_head].inst_number] = 0;
+                bp.correct_predictions++;
             } else if (state == 2) {
                 bp.instruction_state[ROB[rob_head].inst_number] = 1;
                 flush();
-                pc = ROB[rob_head].inst_number + inst_memory[ROB[rob_head].inst_number].imm;
+                pc = inst_memory[ROB[rob_head].inst_number].imm;
             } else if (state == 3) {
                 bp.instruction_state[ROB[rob_head].inst_number] = 2;
                 flush();
-                pc = ROB[rob_head].inst_number + inst_memory[ROB[rob_head].inst_number].imm;
+                pc = inst_memory[ROB[rob_head].inst_number].imm;
+            } else {
+                bp.correct_predictions++;
             }
         } else {
             if (state == 0) {
@@ -464,15 +510,20 @@ void Processor::stageCommit() {
                 bp.instruction_state[ROB[rob_head].inst_number] = 2;
             } else if (state == 2) {
                 bp.instruction_state[ROB[rob_head].inst_number] = 3;
+                bp.correct_predictions++;
+            } else if (state == 3) {
+                bp.correct_predictions++;
             }
         }
     } else if (ROB[rob_head].destReg == -2) {
         Memory[ROB[rob_head].memory_addr] = ROB[rob_head].value;
-    }else if (ROB[rob_head].destReg != 0) { // 0th register is always 0
+    } else if (ROB[rob_head].destReg != 0) {  // 0th register is always 0
         ARF[ROB[rob_head].destReg] = ROB[rob_head].value;
-        if (RAT[ROB[rob_head].destReg] == rob_head) RAT[ROB[rob_head].destReg] = -1;
+        if (RAT[ROB[rob_head].destReg] == rob_head)
+            RAT[ROB[rob_head].destReg] = -1;
     }
     ROB[rob_head].valid = false;
     rob_head++;
     rob_head %= ROB.size();
+    rob_count--;
 }

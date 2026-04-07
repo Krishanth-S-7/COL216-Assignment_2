@@ -21,9 +21,9 @@ class BranchPredictor {
         if (op == OpCode::BEQ || op == OpCode::BNE || op == OpCode::BLT || op == OpCode::BLE) {
             int counter = instruction_state[current_pc];
             if (counter >= 2) {
-                return imm;
-            } else {
                 return current_pc + 1;
+            } else {
+                return imm;
             }
         } else if (op == OpCode::J) {
             return imm;

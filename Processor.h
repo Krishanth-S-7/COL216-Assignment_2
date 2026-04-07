@@ -60,6 +60,7 @@ class Processor {
         units.push_back(divider);
         units.push_back(branch);
         units.push_back(logic);
+        lsq = new LoadStoreQueue(config.mem_lat, config.lsq_rs_size);
 
         // Adder
         // Multiplier
@@ -81,6 +82,14 @@ class Processor {
     void stageCommit();
 
     bool step() {
+        if (exception)
+            return false;
+        if (fetch_reg.pc == -1 && rob_count == 0)
+            return false;
+        stageCommit();
+        stageExecuteAndBroadcast();
+        stageDecode();
+        stageFetch();
         clock_cycle++;
         return true;
     }
