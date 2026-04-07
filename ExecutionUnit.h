@@ -6,9 +6,6 @@
 
 #include "Basics.h"
 
-struct Compare {
-    bool operator()(const RSEntry* a, const RSEntry* b) { return a->sequence_number > b->sequence_number; }
-};
 
 class ExecutionUnit {
    public:

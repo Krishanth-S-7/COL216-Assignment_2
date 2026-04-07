@@ -84,8 +84,11 @@ class Processor {
     bool step() {
         if (exception)
             return false;
-        if (fetch_reg.pc == -1 && rob_count == 0)
+        if (pc >= inst_memory.size() && fetch_reg.pc == -1 && rob_count == 0)
             return false;
+        cout << "Cycle " << clock_cycle << ": PC = " << pc << (is_stalled ? " (stalled)" : "")<< " fetch_reg.pc = " << fetch_reg.pc << "rob count = " << rob_count << endl;
+        // if (fetch_reg.pc == -1 && rob_count == 0)
+        //     return false;
         stageCommit();
         stageExecuteAndBroadcast();
         stageDecode();

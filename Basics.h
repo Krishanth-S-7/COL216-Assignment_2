@@ -66,7 +66,6 @@ struct ROBEntry {
     int inst_number;  // to set the pc if this rob entry caused exception and if this instruction was a branch
                       // instructions then need to check what was predicted to assert its correctness
 };
-
 struct RSEntry {
     bool valid = false;
     bool working = false;
@@ -87,4 +86,7 @@ struct RSEntry {
 
     // value, tag, ready ... for both operands
     // other fields as required
+};
+struct Compare {
+    bool operator()(const RSEntry* a, const RSEntry* b) { return a->sequence_number > b->sequence_number; }
 };

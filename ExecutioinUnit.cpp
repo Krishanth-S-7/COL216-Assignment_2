@@ -57,20 +57,6 @@ void ExecutionUnit::removeEntry() {
     available_ind.push(pipeline.front()->ind);
 }
 
-void ExecutionUnit::runInst(RSEntry* inst) {
-    if (name == UnitType::ADDER) {
-        adder(inst, result_value, has_exception);
-    } else if (name == UnitType::BRANCH) {
-        branch(inst, result_value, has_exception);
-    } else if (name == UnitType::DIVIDER) {
-        divider(inst, result_value, has_exception);
-    }else if (name == UnitType::LOGIC) {
-        logic(inst, result_value, has_exception);
-    } else if (name == UnitType::MULTIPLIER) {
-        multiplier(inst, result_value, has_exception);
-    }
-    has_result = true;
-}
 
 void adder(RSEntry* inst, int& result_value, bool& has_exception) {
     long long result = 0;
@@ -149,4 +135,19 @@ void branch(RSEntry* inst, int& result_value, bool& has_exception) {
     } else if (inst->op == OpCode::BLE) {
         result_value = inst->Valuej <= inst->Valuek;
     }
+}
+
+void ExecutionUnit::runInst(RSEntry* inst) {
+    if (name == UnitType::ADDER) {
+        adder(inst, result_value, has_exception);
+    } else if (name == UnitType::BRANCH) {
+        branch(inst, result_value, has_exception);
+    } else if (name == UnitType::DIVIDER) {
+        divider(inst, result_value, has_exception);
+    } else if (name == UnitType::LOGIC) {
+        logic(inst, result_value, has_exception);
+    } else if (name == UnitType::MULTIPLIER) {
+        multiplier(inst, result_value, has_exception);
+    }
+    has_result = true;
 }

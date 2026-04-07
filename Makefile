@@ -1,3 +1,4 @@
+# 
 # Compiler and flags
 CXX = g++
 CXXFLAGS = -std=c++17 -Wall
@@ -10,7 +11,7 @@ CXXFLAGS = -std=c++17 -Wall
 # and will have its own main() function.
 compile:
 	@echo "Compiling simulator:"
-	$(CXX) $(CXXFLAGS) $(FILE) -o main
+	$(CXX) $(CXXFLAGS) $(FILE) ExecutioinUnit.cpp LoadStoreQueue.cpp Processor.cpp -o main
 	@echo "Build successful, 'main' created."
 
 # ==========================================
@@ -21,7 +22,7 @@ compile:
 # Example below assumes a Python script named 'compiler.py'.
 run:
 	@echo "Compiling preprocessor..."
-	$(CXX) $(CXXFLAGS) preprocessor.cpp -o preprocessor
+	$(CXX) $(CXXFLAGS) PreProcessor.cpp -o preprocessor
 	@echo "Preprocessing $(FILE)..."
 	./preprocessor $(FILE)
 	@echo "Preprocessing complete."

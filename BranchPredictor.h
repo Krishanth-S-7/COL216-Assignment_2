@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "Basics.h"
-
+using namespace std;
 class BranchPredictor {
    public:
     int total_branches = 0;

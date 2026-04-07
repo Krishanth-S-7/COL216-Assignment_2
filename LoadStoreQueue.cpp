@@ -57,10 +57,6 @@ void LoadStoreQueue::removeEntry() {
     available_ind.push(pipeline.front()->ind);
 }
 
-void LoadStoreQueue::runInst(RSEntry* inst, std::vector<int>& Memory) {
-    loadstore(inst, result_value, has_exception, result_value2, isSW, Memory, uncommitedSw);
-    has_result = true;
-}
 
 bool LoadStoreQueue::isfull() { return available_ind.empty(); }
 
@@ -78,4 +74,8 @@ void loadstore(RSEntry* inst, int& result_value, bool& has_exception, int& resul
         result_value = inst->Valuek;
         if (result_value2 < 0 || result_value2 >= Memory.size()) has_exception = true; else uncommitedSw[result_value2] = {result_value, inst->dest};
     }
+}
+void LoadStoreQueue::runInst(RSEntry* inst, std::vector<int>& Memory) {
+    loadstore(inst, result_value, has_exception, result_value2, isSW, Memory, uncommitedSw);
+    has_result = true;
 }
