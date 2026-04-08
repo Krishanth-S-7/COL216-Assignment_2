@@ -128,8 +128,16 @@ void Processor::loadProgram(const std::string& filename) {
         } else {
             this->inst_memory.push_back(instParser(line, line_number));
             line_number++;
-        }
+        } 
     }
+    cout << "Loaded " << inst_memory.size() << " instructions and " << current_memory_index << " memory values.\n";
+    for ( int i = 0 ; i < inst_memory.size(); i++ ) {
+        cout << "Instruction " << i << ": " << static_cast<int>(inst_memory[i].op) << " dest: " << inst_memory[i].dest << " src1: " << inst_memory[i].src1 << " src2: " << inst_memory[i].src2 << " imm: " << inst_memory[i].imm << endl;
+    }
+    for ( int i = 0 ; i < Memory.size(); i++ ) {
+        cout << "Memory " << i << ": " << Memory[i] << endl;
+    }
+    file.close();
 }
 void Processor::InitializeROBEntry(bool valid, bool ready, int destReg, int value, int inst_number) {
     ROB[rob_tail].valid = valid;
@@ -160,7 +168,7 @@ void Processor::stageFetch() {
     if (pc < inst_memory.size()) {
         fetch_reg = inst_memory[pc];
         pc = bp.predict(pc, fetch_reg.imm, fetch_reg.op);
-        bp.predictionslist[fetch_reg.pc].push(pc);
+        bp.predictionslist[fetch_reg.pc].push(bp.instruction_state[fetch_reg.pc]);
     } else {
         fetch_reg.pc = -1;
     }
@@ -193,6 +201,8 @@ void Processor::stageDecode() {
         units[0].inst_counts++;
         int RS_index = units[0].available_ind.front();
         entry.ind = RS_index;
+        if (entry.Vj && entry.Vk)
+            entry.inQueue = true;
         units[0].reservation_station[RS_index] = entry;
         if (entry.Vj && entry.Vk)
             units[0].ready_inst.push(&units[0].reservation_station[RS_index]);
@@ -219,6 +229,8 @@ void Processor::stageDecode() {
         units[1].inst_counts++;
         int RS_index = units[1].available_ind.front();
         entry.ind = RS_index;
+        if (entry.Vj && entry.Vk)
+            entry.inQueue = true;
         units[1].reservation_station[RS_index] = entry;
         if (entry.Vj && entry.Vk)
             units[1].ready_inst.push(&units[1].reservation_station[RS_index]);
@@ -245,6 +257,8 @@ void Processor::stageDecode() {
         units[2].inst_counts++;
         int RS_index = units[2].available_ind.front();
         entry.ind = RS_index;
+        if (entry.Vj && entry.Vk)
+            entry.inQueue = true;
         units[2].reservation_station[RS_index] = entry;
         if (entry.Vj && entry.Vk)
             units[2].ready_inst.push(&units[2].reservation_station[RS_index]);
@@ -272,6 +286,8 @@ void Processor::stageDecode() {
         units[3].inst_counts++;
         int RS_index = units[3].available_ind.front();
         entry.ind = RS_index;
+        if (entry.Vj && entry.Vk)
+            entry.inQueue = true;
         units[3].reservation_station[RS_index] = entry;
         if (entry.Vj && entry.Vk)
             units[3].ready_inst.push(&units[3].reservation_station[RS_index]);
@@ -302,6 +318,8 @@ void Processor::stageDecode() {
         units[4].inst_counts++;
         int RS_index = units[4].available_ind.front();
         entry.ind = RS_index;
+        if (entry.Vj && entry.Vk)
+            entry.inQueue = true;
         units[4].reservation_station[RS_index] = entry;
         units[4].available_ind.pop();
         if (entry.Vj && entry.Vk)
@@ -333,6 +351,8 @@ void Processor::stageDecode() {
         units[0].inst_counts++;
         int RS_index = units[0].available_ind.front();
         entry.ind = RS_index;
+        if (entry.Vj && entry.Vk)
+            entry.inQueue = true;
         units[0].reservation_station[RS_index] = entry;
         if (entry.Vj && entry.Vk)
             units[0].ready_inst.push(&units[0].reservation_station[RS_index]);
@@ -363,6 +383,8 @@ void Processor::stageDecode() {
         entry.sequence_number = lsq->inst_counts;
         lsq->inst_counts++;
         entry.ind = lsq->available_ind.front();
+        if (entry.Vj && entry.Vk)
+            entry.inQueue = true;
         lsq->reservation_station[lsq->available_ind.front()] = entry;
         if (entry.Vj && entry.Vk)
                 lsq->ready_inst.push(&lsq->reservation_station[lsq->available_ind.front()]);
@@ -392,8 +414,12 @@ void Processor::stageDecode() {
         setUpRSEntry(fetch_reg.src2, entry.Valuek, entry.Tagk, entry.Vk);
         entry.dest = rob_tail;
         entry.ind = lsq->available_ind.front();
+        if (entry.Vj && entry.Vk)
+            entry.inQueue = true;
         lsq->reservation_station[lsq->available_ind.front()] = entry;
         lsq->available_ind.pop();
+        if (entry.Vj && entry.Vk)
+            lsq->ready_inst.push(&lsq->reservation_station[entry.ind]);
         // lsq->lsq_queue[lsq->end_index] = entry;
         // lsq->end_index = (lsq->end_index + 1) % lsq->rs_size;
         rob_tail = (rob_tail + 1) % ROB.size();
@@ -401,10 +427,10 @@ void Processor::stageDecode() {
         is_stalled = false;
     }
     if (fetch_reg.op == OpCode::J) {
-        if (units[3].isfull()) {
-            is_stalled = true;
-            return;
-        }
+        // if (units[3].isfull()) {
+        //     is_stalled = true;
+        //     return;
+        // }
         ROB[rob_tail].valid = true;
         ROB[rob_tail].ready = true;
         ROB[rob_tail].destReg = -3;
@@ -483,6 +509,8 @@ void Processor::flush() {
     for (int i = 0; i < bp.predictionslist.size(); i++)
         while (!bp.predictionslist[i].empty())
             bp.predictionslist[i].pop();
+    fetch_reg.pc = -1;
+    is_stalled = false;
 }
 
 void Processor::stageExecuteAndBroadcast() {
@@ -493,7 +521,7 @@ void Processor::stageExecuteAndBroadcast() {
             ROB[units[i].result_tag].has_exception = true;
         if (units[i].has_result) {
             broadcasts.push_back({units[i].result_tag, units[i].result_value});
-            broadcastOnCDB();
+            // broadcastOnCDB();
         }
     }
     lsq->executeCycle(Memory);
@@ -503,7 +531,7 @@ void Processor::stageExecuteAndBroadcast() {
         if (lsq->isSW)
             ROB[lsq->result_tag].memory_addr = lsq->result_value2;
         broadcasts.push_back({lsq->result_tag, lsq->result_value});
-        broadcastOnCDB();
+        // broadcastOnCDB();
     }
     for (auto& p : broadcasts) {
         broadcast_tag = p.first;
@@ -522,6 +550,7 @@ void Processor::stageCommit() {
         return;
     }
     if (ROB[rob_head].destReg == -1) {  // this means it was a branch instruction's entry
+        bp.total_branches++;
         int state = bp.predictionslist[ROB[rob_head].inst_number].front();
         bp.predictionslist[ROB[rob_head].inst_number].pop();
         if (ROB[rob_head].value == 1) {
@@ -532,10 +561,12 @@ void Processor::stageCommit() {
                 bp.instruction_state[ROB[rob_head].inst_number] = 1;
                 flush();
                 pc = inst_memory[ROB[rob_head].inst_number].imm;
+                return;
             } else if (state == 3) {
                 bp.instruction_state[ROB[rob_head].inst_number] = 2;
                 flush();
                 pc = inst_memory[ROB[rob_head].inst_number].imm;
+                return;
             } else {
                 bp.correct_predictions++;
             }
@@ -544,10 +575,12 @@ void Processor::stageCommit() {
                 bp.instruction_state[ROB[rob_head].inst_number] = 1;
                 flush();
                 pc = ROB[rob_head].inst_number + 1;
+                return;
             } else if (state == 1) {
                 flush();
                 pc = ROB[rob_head].inst_number + 1;
                 bp.instruction_state[ROB[rob_head].inst_number] = 2;
+                return;
             } else if (state == 2) {
                 bp.instruction_state[ROB[rob_head].inst_number] = 3;
                 bp.correct_predictions++;

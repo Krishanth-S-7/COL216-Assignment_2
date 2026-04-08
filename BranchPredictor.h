@@ -27,6 +27,7 @@ class BranchPredictor {
             }
         } else if (op == OpCode::J) {
             return imm;
+
         } else {
             return current_pc + 1;
         }
