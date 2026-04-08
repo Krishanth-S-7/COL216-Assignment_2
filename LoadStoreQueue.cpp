@@ -4,11 +4,11 @@ void LoadStoreQueue::capture(int tag, int val) {
     for (int i = 0; i < reservation_station.size(); i++) {
         if (!reservation_station[i].valid)
             continue;
-        if (reservation_station[i].Tagj == tag) {
+        if (!reservation_station[i].Vj && reservation_station[i].Tagj == tag) {
             reservation_station[i].Vj = true;
             reservation_station[i].Valuej = val;
         }
-        if (reservation_station[i].Tagk == tag) {
+        if (!reservation_station[i].Vk && reservation_station[i].Tagk == tag) {
             reservation_station[i].Vk = true;
             reservation_station[i].Valuek = val;
         }
