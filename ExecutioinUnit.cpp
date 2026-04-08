@@ -135,13 +135,13 @@ void logic(RSEntry* inst, int& result_value, bool& has_exception) {
 
 void branch(RSEntry* inst, int& result_value, bool& has_exception) {
     if (inst->op == OpCode::BEQ) {
-        result_value = inst->Valuej == inst->Valuek;
+        result_value = (inst->Valuej == inst->Valuek);
     } else if (inst->op == OpCode::BNE) {
-        result_value = inst->Valuej != inst->Valuek;
+        result_value = (inst->Valuej != inst->Valuek);
     } else if (inst->op == OpCode::BLT) {
-        result_value = inst->Valuej < inst->Valuek;
+        result_value = (inst->Valuej < inst->Valuek);
     } else if (inst->op == OpCode::BLE) {
-        result_value = inst->Valuej <= inst->Valuek;
+        result_value = (inst->Valuej <= inst->Valuek);
     }
 }
 

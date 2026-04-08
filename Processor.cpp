@@ -168,7 +168,7 @@ void Processor::stageFetch() {
     if (pc < inst_memory.size()) {
         fetch_reg = inst_memory[pc];
         pc = bp.predict(pc, fetch_reg.imm, fetch_reg.op);
-        bp.predictionslist[fetch_reg.pc].push(bp.instruction_state[fetch_reg.pc]);
+        if (fetch_reg.op == OpCode::BNE || fetch_reg.op == OpCode::BEQ || fetch_reg.op == OpCode::BLE || fetch_reg.op == OpCode::BLT) bp.predictionslist[fetch_reg.pc].push(bp.instruction_state[fetch_reg.pc]);
     } else {
         fetch_reg.pc = -1;
     }
@@ -454,6 +454,8 @@ void Processor::stageDecode() {
 void Processor::flush() {
     while (ROB[rob_head].valid) {
         ROB[rob_head].valid = false;
+        ROB[rob_head].has_exception = false;
+        ROB[rob_head].ready = false;
         rob_head++;
         rob_head %= ROB.size();
     }
@@ -555,15 +557,15 @@ void Processor::stageCommit() {
         bp.predictionslist[ROB[rob_head].inst_number].pop();
         if (ROB[rob_head].value == 1) {
             if (state == 1) {
-                bp.instruction_state[ROB[rob_head].inst_number] = 0;
+                bp.instruction_state[ROB[rob_head].inst_number] = max(0, bp.instruction_state[ROB[rob_head].inst_number]-1);
                 bp.correct_predictions++;
             } else if (state == 2) {
-                bp.instruction_state[ROB[rob_head].inst_number] = 1;
+                bp.instruction_state[ROB[rob_head].inst_number] = max(0, bp.instruction_state[ROB[rob_head].inst_number]-1);
                 pc = inst_memory[ROB[rob_head].inst_number].imm;
                 flush();
                 return;
             } else if (state == 3) {
-                bp.instruction_state[ROB[rob_head].inst_number] = 2;
+                bp.instruction_state[ROB[rob_head].inst_number] = max(0, bp.instruction_state[ROB[rob_head].inst_number]-1);
                 pc = inst_memory[ROB[rob_head].inst_number].imm;
                 flush();
                 return;
@@ -572,17 +574,17 @@ void Processor::stageCommit() {
             }
         } else {
             if (state == 0) {
-                bp.instruction_state[ROB[rob_head].inst_number] = 1;
+                bp.instruction_state[ROB[rob_head].inst_number] = min(3, bp.instruction_state[ROB[rob_head].inst_number]+1);
                 pc = ROB[rob_head].inst_number + 1;
                 flush();
                 return;
             } else if (state == 1) {
                 pc = ROB[rob_head].inst_number + 1;
-                bp.instruction_state[ROB[rob_head].inst_number] = 2;
+                bp.instruction_state[ROB[rob_head].inst_number] = min(3, bp.instruction_state[ROB[rob_head].inst_number]+1);
                 flush();
                 return;
             } else if (state == 2) {
-                bp.instruction_state[ROB[rob_head].inst_number] = 3;
+                bp.instruction_state[ROB[rob_head].inst_number] = min(3, bp.instruction_state[ROB[rob_head].inst_number]+1);
                 bp.correct_predictions++;
             } else if (state == 3) {
                 bp.correct_predictions++;

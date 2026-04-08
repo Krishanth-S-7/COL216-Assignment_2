@@ -57,11 +57,11 @@ struct ProcessorConfig {
 struct ROBEntry {
     // valid bit, ready bit, architectural register ID
     // other fields as required
-    bool valid;
-    bool ready;
+    bool valid = false;
+    bool ready = false;
     int destReg;  // set -1 for branch instructions, -2 for store word
     int value;
-    bool has_exception;
+    bool has_exception = false;
     int memory_addr;
     int inst_number;  // to set the pc if this rob entry caused exception and if this instruction was a branch
                       // instructions then need to check what was predicted to assert its correctness
