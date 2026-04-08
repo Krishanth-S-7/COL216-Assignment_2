@@ -559,13 +559,13 @@ void Processor::stageCommit() {
                 bp.correct_predictions++;
             } else if (state == 2) {
                 bp.instruction_state[ROB[rob_head].inst_number] = 1;
-                flush();
                 pc = inst_memory[ROB[rob_head].inst_number].imm;
+                flush();
                 return;
             } else if (state == 3) {
                 bp.instruction_state[ROB[rob_head].inst_number] = 2;
-                flush();
                 pc = inst_memory[ROB[rob_head].inst_number].imm;
+                flush();
                 return;
             } else {
                 bp.correct_predictions++;
@@ -573,13 +573,13 @@ void Processor::stageCommit() {
         } else {
             if (state == 0) {
                 bp.instruction_state[ROB[rob_head].inst_number] = 1;
-                flush();
                 pc = ROB[rob_head].inst_number + 1;
+                flush();
                 return;
             } else if (state == 1) {
-                flush();
                 pc = ROB[rob_head].inst_number + 1;
                 bp.instruction_state[ROB[rob_head].inst_number] = 2;
+                flush();
                 return;
             } else if (state == 2) {
                 bp.instruction_state[ROB[rob_head].inst_number] = 3;
