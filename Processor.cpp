@@ -486,13 +486,13 @@ void Processor::flush() {
 }
 
 void Processor::stageExecuteAndBroadcast() {
+    std::vector<std::pair<int, int>> broadcasts;
     for (int i = 0; i < units.size(); i++) {
         units[i].executeCycle();
         if (units[i].has_exception)
             ROB[units[i].result_tag].has_exception = true;
         if (units[i].has_result) {
-            broadcast_tag = units[i].result_tag;
-            broadcast_value = units[i].result_value;
+            broadcasts.push_back({units[i].result_tag, units[i].result_value});
             broadcastOnCDB();
         }
     }
@@ -502,8 +502,12 @@ void Processor::stageExecuteAndBroadcast() {
     if (lsq->has_result) {
         if (lsq->isSW)
             ROB[lsq->result_tag].memory_addr = lsq->result_value2;
-        broadcast_tag = lsq->result_tag;
-        broadcast_value = lsq->result_value;
+        broadcasts.push_back({lsq->result_tag, lsq->result_value});
+        broadcastOnCDB();
+    }
+    for (auto& p : broadcasts) {
+        broadcast_tag = p.first;
+        broadcast_value = p.second;
         broadcastOnCDB();
     }
 }
