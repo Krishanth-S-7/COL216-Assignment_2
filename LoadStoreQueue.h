@@ -18,7 +18,7 @@ class LoadStoreQueue {
     std::vector<RSEntry> reservation_station;
     std::deque<RSEntry*> pipeline;
     std::priority_queue<RSEntry*, std::vector<RSEntry*>, Compare> ready_inst;
-    std::map<int, std::pair<int, int>> uncommitedSw;
+    std::map<int, std::pair<std::pair<int, int>, bool>> uncommitedSw;
     std::queue<int> available_ind;  // use this queue to get the currently available indexes to store it RSEntry
     bool has_result = false;  // result flag
     int result_tag;
@@ -42,5 +42,6 @@ class LoadStoreQueue {
     private:
     void pushIntoPipeline();
     void removeEntry();
-    void runInst(RSEntry* inst, std::vector<int>& Memory);
+    void runInst(std::vector<int>& Memory);
+    void loadstore(std::vector<int>& Memory);
 };

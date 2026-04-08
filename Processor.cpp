@@ -592,8 +592,8 @@ void Processor::stageCommit() {
             }
         }
     } else if (ROB[rob_head].destReg == -2) {
-        if (lsq->uncommitedSw[ROB[rob_head].memory_addr].second == rob_head)
-            lsq->uncommitedSw.erase(ROB[rob_head].memory_addr);
+        if (lsq->uncommitedSw[ROB[rob_head].memory_addr].first.second == rob_head)
+            lsq->uncommitedSw[ROB[rob_head].memory_addr].second = true;
         Memory[ROB[rob_head].memory_addr] = ROB[rob_head].value;
     } else if (ROB[rob_head].destReg > 0) {  // 0th register is always 0
         ARF[ROB[rob_head].destReg] = ROB[rob_head].value;
