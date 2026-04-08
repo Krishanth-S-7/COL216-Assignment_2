@@ -25,8 +25,11 @@ void LoadStoreQueue::executeCycle(std::vector<int>& Memory) {
     result_value = 0;
     isSW = false;
     pushIntoPipeline();
-    if (!pipeline.empty() && pipeline.front()->current_latency != latency) for (auto& entry : pipeline) entry->current_latency++;
+    for (int i = 0; i < pipeline.size(); i++) {
+        pipeline[i]->current_latency = std::min(pipeline[i]->current_latency+1, latency-i);
+    }
     if (!pipeline.empty() && pipeline.front()->current_latency == latency) runInst(Memory);
+    for (auto it = uncommitedSw.begin(); it != uncommitedSw.end();) if (it->second.second) it = uncommitedSw.erase(it); else it++;
 }
 
 void LoadStoreQueue::pushIntoPipeline() {
@@ -84,5 +87,4 @@ void LoadStoreQueue::loadstore(std::vector<int>& Memory) {
 }
 void LoadStoreQueue::runInst(std::vector<int>& Memory) {
     loadstore(Memory);
-    for (auto it = uncommitedSw.begin(); it != uncommitedSw.end();) if (it->second.second) it = uncommitedSw.erase(it); else it++;
 }
