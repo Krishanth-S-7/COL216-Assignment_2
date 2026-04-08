@@ -452,6 +452,7 @@ void Processor::stageDecode() {
 }
 
 void Processor::flush() {
+    is_flushed = true;
     while (ROB[rob_head].valid) {
         ROB[rob_head].valid = false;
         ROB[rob_head].has_exception = false;

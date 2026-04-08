@@ -41,6 +41,7 @@ class Processor {
     LoadStoreQueue* lsq;
     BranchPredictor bp;
     bool is_stalled = false;
+    bool is_flushed = false;
     Processor(ProcessorConfig& config) {
         pc = 0;
         clock_cycle = 0;
@@ -86,13 +87,14 @@ class Processor {
             return false;
         if (pc >= inst_memory.size() && fetch_reg.pc == -1 && rob_count == 0)
             return false;
+        is_flushed = false;
         cout << "Cycle " << clock_cycle << ": PC = " << pc << (is_stalled ? " (stalled)" : "")<< " fetch_reg.pc = " << fetch_reg.pc << "rob count = " << rob_count << endl;
         // if (fetch_reg.pc == -1 && rob_count == 0)
         //     return false;
         stageCommit();
         stageExecuteAndBroadcast();
         stageDecode();
-        stageFetch();
+        if (!is_flushed) stageFetch();
         clock_cycle++;
         return true;
     }

@@ -24,32 +24,22 @@ void ExecutionUnit::executeCycle() {
     has_result = false;
     has_exception = false;
     result_value = 0;
-    if (pipeline.empty()) {
-        pushIntoPipeline();
-        if (!pipeline.empty() && pipeline.front()->current_latency == latency) {
-            runInst(pipeline.front());
-            result_tag = pipeline.front()->dest;
-            removeEntry();
-            pipeline.pop_front();
-        }
-        return;
-    }
+    pushIntoPipeline();
     for (auto& entry : pipeline)
         entry->current_latency++;
-    if (pipeline.front()->current_latency == latency) {
+    if (!pipeline.empty() && pipeline.front()->current_latency == latency) {
         runInst(pipeline.front());
         result_tag = pipeline.front()->dest;
         removeEntry();
         pipeline.pop_front();
     }
-    pushIntoPipeline();
 }
 
 void ExecutionUnit::pushIntoPipeline() {
     if (pipeline.size() == latency || ready_inst.empty()) return;
     pipeline.push_back(ready_inst.top());
     ready_inst.top()->working = true;
-    ready_inst.top()->current_latency = 1;
+    ready_inst.top()->current_latency = 0;
     ready_inst.pop();
 }
 
