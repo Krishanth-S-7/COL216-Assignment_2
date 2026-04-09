@@ -88,7 +88,6 @@ class Processor {
         if (pc >= inst_memory.size() && fetch_reg.pc == -1 && rob_count == 0)
             return false;
         is_flushed = false;
-        cout << "Cycle " << clock_cycle << ": PC = " << pc << (is_stalled ? " (stalled)" : "")<< " fetch_reg.pc = " << fetch_reg.pc << "rob count = " << rob_count << endl;
         // if (fetch_reg.pc == -1 && rob_count == 0)
         //     return false;
         stageCommit();

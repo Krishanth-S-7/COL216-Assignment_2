@@ -130,13 +130,6 @@ void Processor::loadProgram(const std::string& filename) {
             line_number++;
         } 
     }
-    cout << "Loaded " << inst_memory.size() << " instructions and " << current_memory_index << " memory values.\n";
-    for ( int i = 0 ; i < inst_memory.size(); i++ ) {
-        cout << "Instruction " << i << ": " << static_cast<int>(inst_memory[i].op) << " dest: " << inst_memory[i].dest << " src1: " << inst_memory[i].src1 << " src2: " << inst_memory[i].src2 << " imm: " << inst_memory[i].imm << endl;
-    }
-    for ( int i = 0 ; i < Memory.size(); i++ ) {
-        cout << "Memory " << i << ": " << Memory[i] << endl;
-    }
     file.close();
 }
 void Processor::InitializeROBEntry(bool valid, bool ready, int destReg, int value, int inst_number) {
