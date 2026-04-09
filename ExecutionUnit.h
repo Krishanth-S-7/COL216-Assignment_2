@@ -21,6 +21,7 @@ class ExecutionUnit {
     long long inst_counts = 0;
     std::priority_queue<RSEntry*, std::vector<RSEntry*>, Compare> ready_inst;
     std::deque<RSEntry*> pipeline;
+    int indToFree = -1;
     std::queue<int> available_ind;  // use this queue to get the currently available indexes to store it RSEntry
     ExecutionUnit(UnitType name, int latency, int rs_size) {
         this->name = name;

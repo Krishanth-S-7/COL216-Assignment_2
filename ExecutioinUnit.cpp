@@ -24,6 +24,16 @@ void ExecutionUnit::executeCycle() {
     has_result = false;
     has_exception = false;
     result_value = 0;
+    if (indToFree != -1) {
+        reservation_station[indToFree].valid = false;
+        reservation_station[indToFree].Vj = false;
+        reservation_station[indToFree].Vk = false;
+        reservation_station[indToFree].inQueue = false;
+        reservation_station[indToFree].working = false;
+        reservation_station[indToFree].current_latency = 0;
+        available_ind.push(indToFree);
+    }
+    indToFree = -1;
     pushIntoPipeline();
     for (auto& entry : pipeline)
         entry->current_latency++;
@@ -44,15 +54,16 @@ void ExecutionUnit::pushIntoPipeline() {
 }
 
 void ExecutionUnit::removeEntry() {
-    if (pipeline.empty())
-        return;
-    reservation_station[pipeline.front()->ind].valid = false;
-    reservation_station[pipeline.front()->ind].Vj = false;
-    reservation_station[pipeline.front()->ind].Vk = false;
-    reservation_station[pipeline.front()->ind].inQueue = false;
-    reservation_station[pipeline.front()->ind].working = false;
-    reservation_station[pipeline.front()->ind].current_latency = 0;
-    available_ind.push(pipeline.front()->ind);
+    indToFree = pipeline.front()->ind;
+    // if (pipeline.empty())
+    //     return;
+    // reservation_station[pipeline.front()->ind].valid = false;
+    // reservation_station[pipeline.front()->ind].Vj = false;
+    // reservation_station[pipeline.front()->ind].Vk = false;
+    // reservation_station[pipeline.front()->ind].inQueue = false;
+    // reservation_station[pipeline.front()->ind].working = false;
+    // reservation_station[pipeline.front()->ind].current_latency = 0;
+    // available_ind.push(pipeline.front()->ind);
 }
 
 

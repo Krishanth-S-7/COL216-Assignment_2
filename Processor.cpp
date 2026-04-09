@@ -480,6 +480,7 @@ void Processor::flush() {
         for (int j = 0; j < units[i].reservation_station.size(); j++)
             units[i].available_ind.push(j);
         units[i].has_exception = false;
+        units[i].indToFree = -1;
         units[i].has_result = false;
         units[i].result_value = 0;
         units[i].inst_counts = 0;
@@ -505,6 +506,7 @@ void Processor::flush() {
     lsq->result_value = 0;
     lsq->lsq_inst = 0;
     lsq->inst_counts = 0;
+    lsq->indToFree = -1;
     lsq->uncommitedSw.clear();
     lsq->isSW = false;
     for (int i = 0; i < RAT.size(); i++)
@@ -592,8 +594,8 @@ void Processor::stageCommit() {
             }
         }
     } else if (ROB[rob_head].destReg == -2) {
-        if (lsq->uncommitedSw[ROB[rob_head].memory_addr].first.second == rob_head)
-            lsq->uncommitedSw[ROB[rob_head].memory_addr].second = true;
+        if (lsq->uncommitedSw.find(ROB[rob_head].memory_addr) != lsq->uncommitedSw.end() && lsq->uncommitedSw[ROB[rob_head].memory_addr].second == rob_head)
+            lsq->uncommitedSw.erase(ROB[rob_head].memory_addr);
         Memory[ROB[rob_head].memory_addr] = ROB[rob_head].value;
     } else if (ROB[rob_head].destReg > 0) {  // 0th register is always 0
         ARF[ROB[rob_head].destReg] = ROB[rob_head].value;
@@ -601,6 +603,8 @@ void Processor::stageCommit() {
             RAT[ROB[rob_head].destReg] = -1;
     }
     ROB[rob_head].valid = false;
+    ROB[rob_head].ready = false;
+    ROB[rob_head].has_exception = false;
     rob_head++;
     rob_head %= ROB.size();
     rob_count--;

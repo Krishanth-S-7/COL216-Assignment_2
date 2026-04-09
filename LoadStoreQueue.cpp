@@ -24,12 +24,21 @@ void LoadStoreQueue::executeCycle(std::vector<int>& Memory) {
     has_exception = false;
     result_value = 0;
     isSW = false;
-    pushIntoPipeline();
-    for (int i = 0; i < pipeline.size(); i++) {
-        pipeline[i]->current_latency = std::min(pipeline[i]->current_latency+1, latency-i);
+    if (indToFree != -1) {
+        reservation_station[indToFree].valid = false;
+        reservation_station[indToFree].Vj = false;
+        reservation_station[indToFree].Vk = false;
+        reservation_station[indToFree].inQueue = false;
+        reservation_station[indToFree].working = false;
+        reservation_station[indToFree].current_latency = 0;
+        available_ind.push(indToFree);
     }
-    if (!pipeline.empty() && pipeline.front()->current_latency == latency) runInst(Memory);
-    for (auto it = uncommitedSw.begin(); it != uncommitedSw.end();) if (it->second.second) it = uncommitedSw.erase(it); else it++;
+    indToFree = -1;
+    pushIntoPipeline();
+    for (int i = 0; i < pipeline.size(); i++) pipeline[i]->current_latency = std::min(pipeline[i]->current_latency+1, latency-i);
+    if (!pipeline.empty() && pipeline.front()->current_latency == latency) {
+        runInst(Memory);
+    }
 }
 
 void LoadStoreQueue::pushIntoPipeline() {
@@ -42,14 +51,15 @@ void LoadStoreQueue::pushIntoPipeline() {
 }
 
 void LoadStoreQueue::removeEntry() {
-    if (pipeline.empty()) return;
-    reservation_station[pipeline.front()->ind].valid = false;
-    reservation_station[pipeline.front()->ind].Vj = false;
-    reservation_station[pipeline.front()->ind].Vk = false;
-    reservation_station[pipeline.front()->ind].inQueue = false;
-    reservation_station[pipeline.front()->ind].working = false;
-    reservation_station[pipeline.front()->ind].current_latency = 0;
-    available_ind.push(pipeline.front()->ind);
+    indToFree = pipeline.front()->ind;
+    // if (pipeline.empty()) return;
+    // reservation_station[pipeline.front()->ind].valid = false;
+    // reservation_station[pipeline.front()->ind].Vj = false;
+    // reservation_station[pipeline.front()->ind].Vk = false;
+    // reservation_station[pipeline.front()->ind].inQueue = false;
+    // reservation_station[pipeline.front()->ind].working = false;
+    // reservation_station[pipeline.front()->ind].current_latency = 0;
+    // available_ind.push(pipeline.front()->ind);
 }
 
 
@@ -72,13 +82,19 @@ void LoadStoreQueue::loadstore(std::vector<int>& Memory) {
                 result_tag = pipeline.front()->dest;
                 removeEntry();
                 pipeline.pop_front();
+            } else {
+                result_value = uncommitedSw[addr].first;
+                has_result = true;
+                result_tag = inst->dest;
+                removeEntry();
+                pipeline.pop_front();
             }
         }
     } else if (inst->op == OpCode::SW) {
         isSW = true;
         result_value2 = inst->Valuej + inst->imm;
         result_value = inst->Valuek;
-        if (result_value2 < 0 || result_value2 >= Memory.size()) has_exception = true; else uncommitedSw[result_value2] = {{result_value, inst->dest}, false};
+        if (result_value2 < 0 || result_value2 >= Memory.size()) has_exception = true; else uncommitedSw[result_value2] = {result_value, inst->dest};
         has_result = true;
         result_tag = pipeline.front()->dest;
         removeEntry();
