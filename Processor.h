@@ -83,10 +83,6 @@ class Processor {
     void stageCommit();
 
     bool step() {
-        if (exception)
-            return false;
-        if (pc >= inst_memory.size() && fetch_reg.pc == -1 && rob_count == 0)
-            return false;
         is_flushed = false;
         // if (fetch_reg.pc == -1 && rob_count == 0)
         //     return false;
@@ -96,6 +92,10 @@ class Processor {
         if (!is_flushed)
             stageFetch();
         clock_cycle++;
+        if (exception)
+            return false;
+        if (pc >= inst_memory.size() && fetch_reg.pc == -1 && rob_count == 0)
+            return false;
         return true;
     }
 
