@@ -1,4 +1,3 @@
-# 
 # Compiler and flags
 CXX = g++
 CXXFLAGS = -std=c++17 -Wall
@@ -11,7 +10,7 @@ CXXFLAGS = -std=c++17 -Wall
 # and will have its own main() function.
 compile:
 	@echo "Compiling simulator:"
-	$(CXX) $(CXXFLAGS) $(FILE) ExecutioinUnit.cpp LoadStoreQueue.cpp Processor.cpp -o main
+	$(CXX) $(CXXFLAGS) ExecutioinUnit.cpp LoadStoreQueue.cpp Processor.cpp $(FILE) -o main
 	@echo "Build successful, 'main' created."
 
 # ==========================================
@@ -27,5 +26,3 @@ run:
 	./preprocessor $(FILE)
 	@echo "Preprocessing complete."
 
-clean:
-	rm -f main preprocessor

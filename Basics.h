@@ -74,8 +74,8 @@ struct RSEntry {
     int Tagk = -1;
     int Valuej = 0;
     int Valuek = 0;
-    int imm = 0;  // stores the immediate offset for SW
-    int dest = -1; // the entry of this instruction in rob
+    int imm = 0;    // stores the immediate offset for SW
+    int dest = -1;  // the entry of this instruction in rob
     int current_latency = 0;
     bool Vj = false;
     bool Vk = false;

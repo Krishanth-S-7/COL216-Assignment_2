@@ -14,8 +14,14 @@ class BranchPredictor {
     vector<int> instruction_state;
     vector<queue<int>> predictionslist;
     BranchPredictor() {
-        instruction_state.resize(1024, 0);
-        predictionslist.resize(1024);
+        // instruction_state.resize(1024, 0);
+        // predictionslist.resize(1024);
+    }
+    void initialize(size_t num_instructions) {
+        instruction_state.clear();
+        predictionslist.clear();
+        instruction_state.resize(num_instructions, 0);
+        predictionslist.resize(num_instructions);
     }
     int predict(int current_pc, int imm, OpCode op) {
         if (op == OpCode::BEQ || op == OpCode::BNE || op == OpCode::BLT || op == OpCode::BLE) {

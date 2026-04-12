@@ -128,8 +128,9 @@ void Processor::loadProgram(const std::string& filename) {
         } else {
             this->inst_memory.push_back(instParser(line, line_number));
             line_number++;
-        } 
+        }
     }
+    bp.initialize(inst_memory.size() + 10);
     file.close();
 }
 void Processor::InitializeROBEntry(bool valid, bool ready, int destReg, int value, int inst_number) {
@@ -161,7 +162,9 @@ void Processor::stageFetch() {
     if (pc < inst_memory.size()) {
         fetch_reg = inst_memory[pc];
         pc = bp.predict(pc, fetch_reg.imm, fetch_reg.op);
-        if (fetch_reg.op == OpCode::BNE || fetch_reg.op == OpCode::BEQ || fetch_reg.op == OpCode::BLE || fetch_reg.op == OpCode::BLT) bp.predictionslist[fetch_reg.pc].push(bp.instruction_state[fetch_reg.pc]);
+        if (fetch_reg.op == OpCode::BNE || fetch_reg.op == OpCode::BEQ || fetch_reg.op == OpCode::BLE ||
+            fetch_reg.op == OpCode::BLT)
+            bp.predictionslist[fetch_reg.pc].push(bp.instruction_state[fetch_reg.pc]);
     } else {
         fetch_reg.pc = -1;
     }
@@ -380,7 +383,7 @@ void Processor::stageDecode() {
             entry.inQueue = true;
         lsq->reservation_station[lsq->available_ind.front()] = entry;
         if (entry.Vj && entry.Vk)
-                lsq->ready_inst.push(&lsq->reservation_station[lsq->available_ind.front()]);
+            lsq->ready_inst.push(&lsq->reservation_station[lsq->available_ind.front()]);
         lsq->available_ind.pop();
         // lsq->lsq_queue[lsq->end_index] = entry;
         // lsq->end_index = (lsq->end_index + 1) % lsq->rs_size;
@@ -553,15 +556,18 @@ void Processor::stageCommit() {
         bp.predictionslist[ROB[rob_head].inst_number].pop();
         if (ROB[rob_head].value == 1) {
             if (state == 1) {
-                bp.instruction_state[ROB[rob_head].inst_number] = max(0, bp.instruction_state[ROB[rob_head].inst_number]-1);
+                bp.instruction_state[ROB[rob_head].inst_number] =
+                    max(0, bp.instruction_state[ROB[rob_head].inst_number] - 1);
                 bp.correct_predictions++;
             } else if (state == 2) {
-                bp.instruction_state[ROB[rob_head].inst_number] = max(0, bp.instruction_state[ROB[rob_head].inst_number]-1);
+                bp.instruction_state[ROB[rob_head].inst_number] =
+                    max(0, bp.instruction_state[ROB[rob_head].inst_number] - 1);
                 pc = inst_memory[ROB[rob_head].inst_number].imm;
                 flush();
                 return;
             } else if (state == 3) {
-                bp.instruction_state[ROB[rob_head].inst_number] = max(0, bp.instruction_state[ROB[rob_head].inst_number]-1);
+                bp.instruction_state[ROB[rob_head].inst_number] =
+                    max(0, bp.instruction_state[ROB[rob_head].inst_number] - 1);
                 pc = inst_memory[ROB[rob_head].inst_number].imm;
                 flush();
                 return;
@@ -570,24 +576,28 @@ void Processor::stageCommit() {
             }
         } else {
             if (state == 0) {
-                bp.instruction_state[ROB[rob_head].inst_number] = min(3, bp.instruction_state[ROB[rob_head].inst_number]+1);
+                bp.instruction_state[ROB[rob_head].inst_number] =
+                    min(3, bp.instruction_state[ROB[rob_head].inst_number] + 1);
                 pc = ROB[rob_head].inst_number + 1;
                 flush();
                 return;
             } else if (state == 1) {
                 pc = ROB[rob_head].inst_number + 1;
-                bp.instruction_state[ROB[rob_head].inst_number] = min(3, bp.instruction_state[ROB[rob_head].inst_number]+1);
+                bp.instruction_state[ROB[rob_head].inst_number] =
+                    min(3, bp.instruction_state[ROB[rob_head].inst_number] + 1);
                 flush();
                 return;
             } else if (state == 2) {
-                bp.instruction_state[ROB[rob_head].inst_number] = min(3, bp.instruction_state[ROB[rob_head].inst_number]+1);
+                bp.instruction_state[ROB[rob_head].inst_number] =
+                    min(3, bp.instruction_state[ROB[rob_head].inst_number] + 1);
                 bp.correct_predictions++;
             } else if (state == 3) {
                 bp.correct_predictions++;
             }
         }
     } else if (ROB[rob_head].destReg == -2) {
-        if (lsq->uncommitedSw.find(ROB[rob_head].memory_addr) != lsq->uncommitedSw.end() && lsq->uncommitedSw[ROB[rob_head].memory_addr].second == rob_head)
+        if (lsq->uncommitedSw.find(ROB[rob_head].memory_addr) != lsq->uncommitedSw.end() &&
+            lsq->uncommitedSw[ROB[rob_head].memory_addr].second == rob_head)
             lsq->uncommitedSw.erase(ROB[rob_head].memory_addr);
         Memory[ROB[rob_head].memory_addr] = ROB[rob_head].value;
     } else if (ROB[rob_head].destReg > 0) {  // 0th register is always 0

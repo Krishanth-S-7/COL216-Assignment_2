@@ -93,7 +93,8 @@ class Processor {
         stageCommit();
         stageExecuteAndBroadcast();
         stageDecode();
-        if (!is_flushed) stageFetch();
+        if (!is_flushed)
+            stageFetch();
         clock_cycle++;
         return true;
     }

@@ -12,11 +12,11 @@ void ExecutionUnit::capture(int tag, int val) {
             reservation_station[i].Vk = true;
             reservation_station[i].Valuek = val;
         }
-        if (!reservation_station[i].working && !reservation_station[i].inQueue && reservation_station[i].Vj && reservation_station[i].Vk) {
+        if (!reservation_station[i].working && !reservation_station[i].inQueue && reservation_station[i].Vj &&
+            reservation_station[i].Vk) {
             ready_inst.push(&reservation_station[i]);
             reservation_station[i].inQueue = true;
         }
-
     }
 }
 
@@ -46,7 +46,8 @@ void ExecutionUnit::executeCycle() {
 }
 
 void ExecutionUnit::pushIntoPipeline() {
-    if (pipeline.size() == latency || ready_inst.empty()) return;
+    if (pipeline.size() == latency || ready_inst.empty())
+        return;
     pipeline.push_back(ready_inst.top());
     ready_inst.top()->working = true;
     ready_inst.top()->current_latency = 0;
@@ -65,7 +66,6 @@ void ExecutionUnit::removeEntry() {
     // reservation_station[pipeline.front()->ind].current_latency = 0;
     // available_ind.push(pipeline.front()->ind);
 }
-
 
 void adder(RSEntry* inst, int& result_value, bool& has_exception) {
     long long result = 0;

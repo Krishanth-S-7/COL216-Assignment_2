@@ -12,7 +12,8 @@ void LoadStoreQueue::capture(int tag, int val) {
             reservation_station[i].Vk = true;
             reservation_station[i].Valuek = val;
         }
-        if (!reservation_station[i].working && !reservation_station[i].inQueue && reservation_station[i].Vj && reservation_station[i].Vk) {
+        if (!reservation_station[i].working && !reservation_station[i].inQueue && reservation_station[i].Vj &&
+            reservation_station[i].Vk) {
             ready_inst.push(&reservation_station[i]);
             reservation_station[i].inQueue = true;
         }
@@ -35,14 +36,16 @@ void LoadStoreQueue::executeCycle(std::vector<int>& Memory) {
     }
     indToFree = -1;
     pushIntoPipeline();
-    for (int i = 0; i < pipeline.size(); i++) pipeline[i]->current_latency = std::min(pipeline[i]->current_latency+1, latency-i);
+    for (int i = 0; i < pipeline.size(); i++)
+        pipeline[i]->current_latency = std::min(pipeline[i]->current_latency + 1, latency - i);
     if (!pipeline.empty() && pipeline.front()->current_latency == latency) {
         runInst(Memory);
     }
 }
 
 void LoadStoreQueue::pushIntoPipeline() {
-    if (pipeline.size() == latency || ready_inst.empty() || ready_inst.top()->sequence_number != lsq_inst) return;
+    if (pipeline.size() == latency || ready_inst.empty() || ready_inst.top()->sequence_number != lsq_inst)
+        return;
     pipeline.push_back(ready_inst.top());
     ready_inst.top()->working = true;
     ready_inst.top()->current_latency = 0;
@@ -61,7 +64,6 @@ void LoadStoreQueue::removeEntry() {
     // reservation_station[pipeline.front()->ind].current_latency = 0;
     // available_ind.push(pipeline.front()->ind);
 }
-
 
 bool LoadStoreQueue::isfull() { return available_ind.empty(); }
 
@@ -94,13 +96,14 @@ void LoadStoreQueue::loadstore(std::vector<int>& Memory) {
         isSW = true;
         result_value2 = inst->Valuej + inst->imm;
         result_value = inst->Valuek;
-        if (result_value2 < 0 || result_value2 >= Memory.size()) has_exception = true; else uncommitedSw[result_value2] = {result_value, inst->dest};
+        if (result_value2 < 0 || result_value2 >= Memory.size())
+            has_exception = true;
+        else
+            uncommitedSw[result_value2] = {result_value, inst->dest};
         has_result = true;
         result_tag = pipeline.front()->dest;
         removeEntry();
         pipeline.pop_front();
     }
 }
-void LoadStoreQueue::runInst(std::vector<int>& Memory) {
-    loadstore(Memory);
-}
+void LoadStoreQueue::runInst(std::vector<int>& Memory) { loadstore(Memory); }
